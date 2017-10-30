@@ -1,0 +1,21 @@
+#
+#Thu Aug 03 12:34:16 CEST 2017
+owner=gvSIG
+code=Catalog
+java-version=j1_7
+official=true
+type=Script
+version=1.0.0-6
+state=testing
+operating-system=all
+dependencies=
+sources-url=
+web-url=
+architecture=all
+model-version=1.0.1
+categories=
+description=
+owner-url=
+buildNumber=6
+gvSIG-version=2.4.0
+name=Catalog
