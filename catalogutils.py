@@ -29,13 +29,15 @@ from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.andami import PluginsLocator
 
 
+from org.gvsig.scripting import ScriptingLocator
+
 explorer = None
 mapContextManager = None
 iconTheme = None
 dataManager = None
 
 def getDataFolder():
-  return getResource(__file__,"data")
+  return ScriptingLocator.getManager().getDataFolder("Catalog").getAbsolutePath()
 
 def getDataManager():
   global dataManager

@@ -33,6 +33,11 @@ def loadParameters(pathname):
   fis.close()
   return parameters
 
+def getBookmarksFolder():
+  f = os.path.join(getDataFolder(),"bookmarks")
+  if not os.path.exists(f):
+    os.mkdir(f)
+  return f
 
 class BookmarkFolder(CatalogNode):
   def __init__(self, parent, path, label = None, icon = None):
@@ -246,7 +251,7 @@ class Bookmarks(BookmarkFolder):
   def __init__(self, parent):
     BookmarkFolder.__init__(self, 
       parent, 
-      getDataFolder(), 
+      getBookmarksFolder(), 
       "Bookmarks", 
       icon=getResource(__file__,"images","Favourite.png")
     )
