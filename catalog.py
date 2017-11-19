@@ -13,23 +13,22 @@ from javax.swing import JScrollPane
 from javax.swing.tree import DefaultTreeCellRenderer
 from javax.swing.tree import DefaultTreeModel
 from javax.swing.tree import TreePath
-
 from org.gvsig.fmap.dal import DALLocator
+from org.gvsig.tools import ToolsLocator
 
-import catalogutils
-reload(catalogutils)
-import folders
-reload(folders)
-import bookmarks
-reload(bookmarks)
-import databases
-reload(databases)
+import addons.Catalog.catalogutils
+reload(addons.Catalog.catalogutils)
+import addons.Catalog.folders
+reload(addons.Catalog.folders)
+import addons.Catalog.bookmarks
+reload(addons.Catalog.bookmarks)
+import addons.Catalog.databases
+reload(addons.Catalog.databases)
 
-from catalogutils import CatalogNode
-
-from folders import Folders
-from bookmarks import Bookmarks
-from databases import Databases
+from addons.Catalog.catalogutils import CatalogNode
+from addons.Catalog.folders import Folders
+from addons.Catalog.bookmarks import Bookmarks, BookmarkFolder
+from addons.Catalog.databases import Databases
 
 class Catalog(CatalogNode):
   def __init__(self, tree):
@@ -38,9 +37,19 @@ class Catalog(CatalogNode):
     self.add(Bookmarks(self))
     self.add(Folders(self))
     self.add(Databases(self))
+
+  def getBookmarks(self):
+    return self.getChildAt(0)
+    
+  def getFolders(self):
+    return self.getChildAt(1)
+    
+  def getDatabases(self):
+    return self.getChildAt(2)
     
   def toString(self):
-    return "Data sourcces"
+    i18n = ToolsLocator.getI18nManager()
+    return i18n.getTranslation("_Data_sources")
 
   def getTreePath(self):
     return [ self ]
@@ -76,6 +85,15 @@ class JCatalogTree(JTree):
     )    
     self.addMouseListener(MouseListenerAdapter(self.mouseClicked))
 
+  def addCurrentLayerToBookmarks(self):
+   currentNode = None
+   treePath = self.getSelectionPath()
+   if treePath != None:
+     currentNode = treePath.getLastPathComponent()
+   if not isinstance(currentNode,BookmarkFolder):
+     currentNode = self.__catalog.getChildAt(0)
+   currentNode.mnuAddCurrentLayerToBookmarks()
+   
   def mouseClicked(self, event):
     if event.isPopupTrigger():
       tree = event.getSource()
@@ -94,11 +112,12 @@ class JCatalogTree(JTree):
     
     
 def main(*args):
+  i18n = ToolsLocator.getI18nManager()
   currentView().getWindowOfView().getViewInformationArea().add(
     JScrollPane(JCatalogTree()), 
     "Catalog", 
     100, 
-    "Catalog", 
+    i18n.getTranslation("_Catalog"), 
     None, 
     None
   )

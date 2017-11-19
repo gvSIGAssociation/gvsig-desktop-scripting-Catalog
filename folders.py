@@ -4,27 +4,94 @@ import gvsig
 from gvsig import getResource
 
 import os
+import ConfigParser
 
 from java.io import File
 from org.gvsig.tools import ToolsLocator
 from org.gvsig.andami import PluginsLocator
+from javax.swing import JPopupMenu
 
+from addons.Catalog.catalogutils import CatalogSimpleNode, CatalogNode, getIconFromFile
+from addons.Catalog.catalogutils import createJMenuItem, getDataManager, getProviderFactoryFromFile
+from addons.Catalog.catalogutils import getDataFolder
 
-from catalogutils import CatalogSimpleNode, CatalogNode, getIconFromFile
+from org.gvsig.fmap.dal.swing import DALSwingLocator
+
+from org.gvsig.app import ApplicationLocator
+from org.gvsig.app.project.documents.table import TableManager
+
+from org.gvsig.fmap.dal import DataStoreProviderFactory
+
+from javax.swing import JSeparator
+
+from org.gvsig.tools.util import ToolsUtilLocator
+
+from gvsig.commonsdialog import msgbox
+from org.gvsig.fmap.dal.exception import ValidateDataParametersException
+
+from gvsig.commonsdialog import openFolderDialog
+
+from gvsig.commonsdialog import inputbox
+from gvsig.commonsdialog import QUESTION
+
+def getFoldersFolder():
+  f = os.path.join(getDataFolder(),"folders")
+  if not os.path.exists(f):
+    os.mkdir(f)
+  return f
 
 class Folders(CatalogNode):
   def __init__(self, parent):
     CatalogNode.__init__(self,parent)
-    self.add(FolderNode(self,os.getenv("HOME"),"Home",icon=getResource(__file__,"images","Home.png")))
+    self.add(HomeFolder(self))
 
     foldersManager = ToolsLocator.getFoldersManager()
     dataFolder = foldersManager.get("DataFolder")
     if dataFolder != None:
-      self.add(FolderNode(self,dataFolder.getAbsolutePath(),"Data",icon=getResource(__file__,"images","DataFolder.png")))
+      self.add(DataFolderFolder(self,dataFolder.getAbsolutePath()))
+
+    ls = os.listdir(getFoldersFolder())
+    for fname in ls:
+      pathname = os.path.join(getFoldersFolder(),fname)
+      if fname[0] == ".":
+        continue
+      if fname.endswith(".linkfile"):
+        self.add(LinkedFolder(self,pathname))
+      
     
   def toString(self):
-    return "Folders"
-    
+    i18n = ToolsLocator.getI18nManager()
+    return i18n.getTranslation("_Folders")
+
+  def createPopup(self):
+    i18n = ToolsLocator.getI18nManager()
+    menu = JPopupMenu()
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_folder_to_catalog"),self.addFolder))
+    return menu    
+
+  def addFolder(self, event=None):
+    i18n = ToolsLocator.getI18nManager()
+    target = openFolderDialog(i18n.getTranslation("_Select_a_folder_to_add_to_catalog"))
+    if target==None:
+      return
+    target = target[0]
+    i18n = ToolsLocator.getI18nManager()
+    name = os.path.basename(target)
+    pathname = None
+    prompt = i18n.getTranslation("_Folder_name")
+    while pathname==None or os.path.exists(pathname):
+      name = inputbox(prompt, i18n.getTranslation("_Catalog"), QUESTION, initialValue=name)
+      if name in ("", None):
+        return
+      prompt = i18n.getTranslation("_Folder_name_already_exist_entry_another_name")
+      pathname = os.path.join(getFoldersFolder(),name) + ".linkfile"
+    config = ConfigParser.ConfigParser()
+    config.add_section('FolderLink')
+    config.set("FolderLink","target", target)
+    with open(pathname, 'wb') as configfile:
+      config.write(configfile)
+    self.add(LinkedFolder(self,pathname))
+
 class FolderNode(CatalogSimpleNode):
   def __init__(self, parent, path, label = None, icon = None):
     CatalogSimpleNode.__init__(self, parent, icon)
@@ -52,6 +119,17 @@ class FolderNode(CatalogSimpleNode):
   def toString(self):
     return  unicode(self.__label, 'utf-8') 
 
+  def createPopup(self):
+    i18n = ToolsLocator.getI18nManager()
+    menu = JPopupMenu()
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_in_filesystem_explorer"),self.openInFilesystemBrowser))
+    return menu    
+
+  def openInFilesystemBrowser(self,event=None):
+    uri = File(self.__path).toURL().toURI()
+    desktop = ToolsUtilLocator.getToolsUtilManager().createDesktopOpen()
+    desktop.browse(uri)
+      
   def children(self):
     # Returns the children of the receiver as an Enumeration.
     return enumerate(self.__files)
@@ -63,13 +141,13 @@ class FolderNode(CatalogSimpleNode):
   def getChildAt(self, childIndex):
     # Returns the child TreeNode at index childIndex.
     fname = os.path.join(self.__path,self.__files[childIndex])
-    if os.path.isdir(fname):
-      f = FolderNode(self,fname)
-    else:
-      f = FileNode(self,fname)
-    #print ">>> getChildAt", childIndex, f
-    return f
-    
+    try:
+      if os.path.isdir(fname):
+        return FolderNode(self,fname)
+      return FileNode(self,fname)
+    except:
+      return BrokenNode(self,fname)
+      
   def getChildCount(self):
     # Returns the number of children TreeNodes the receiver contains.
     x = len(self.__files)
@@ -85,10 +163,6 @@ class FolderNode(CatalogSimpleNode):
       index += 1
     return -1
      
-  def getParent(self):
-    # Returns the parent TreeNode of the receiver.
-    return self.__parent
-    
   def isLeaf(self):
     # Returns true if the receiver is a leaf.
     return False
@@ -101,17 +175,125 @@ class FileNode(CatalogSimpleNode):
       self.__label = os.path.basename(self.__path)
     else:
       self.__label = label
+    self.__params = None
 
   def toString(self):
     return  unicode(self.__label, 'utf-8') 
+
+  def getParams(self):
+    if self.__params == None:
+      factory = getProviderFactoryFromFile(self.__path)
+      if factory==None:
+        return
+      self.__params = factory.createParameters()
+      self.__params.setFile(File(self.__path))
+    return self.__params
     
-  def actionPerformed(self, event):
+  def createPopup(self):
     if self.getIcon()==None:
+      return
+    i18n = ToolsLocator.getI18nManager()
+    menu = JPopupMenu()
+    factory = getProviderFactoryFromFile(self.__path)
+    if factory!=None : 
+      if (factory.hasVectorialSupport()!=DataStoreProviderFactory.NO or
+        factory.hasRasterSupport()!=DataStoreProviderFactory.NO ):
+        menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
+      if factory.hasTabularSupport()==DataStoreProviderFactory.YES:
+        menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
+    return menu    
+
+  def addToBookmarks(self, event=None):
+    i18n = ToolsLocator.getI18nManager()
+    treePath = self.getTreePath()
+    bookmarks = treePath[0].getBookmarks()
+    name = os.path.basename(self.__path)
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recuse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values"+"\n\n"+ex.getLocalizedMessageStack()))
+      return
+    bookmarks.addParamsToBookmarks(name,self.getParams())
+    
+  def mnuEditParameters(self, event=None):
+    manager = DALSwingLocator.getDataStoreParametersPanelManager()
+    panel = manager.createDataStoreParametersPanel(self.getParams())
+    manager.showPropertiesDialog(self.getParams(), panel)
+
+  def openAsTable(self, event=None):
+    factory = getProviderFactoryFromFile(self.__path)
+    if factory==None or factory.hasTabularSupport()!=DataStoreProviderFactory.YES:
+      return
+    store = getDataManager().openStore(factory.getName(), self.getParams())
+    projectManager = ApplicationLocator.getManager().getProjectManager()
+    tableDoc = projectManager.createDocument(TableManager.TYPENAME)
+    tableDoc.setStore(store)
+    projectManager.getCurrentProject().addDocument(tableDoc)
+    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+  
+  def actionPerformed(self, event=None):
+    if self.getIcon()==None:
+      return
+    factory = getProviderFactoryFromFile(self.__path)
+    if ( factory!=None and 
+      factory.hasTabularSupport()==DataStoreProviderFactory.YES and 
+      factory.hasVectorialSupport()!=DataStoreProviderFactory.YES and
+      factory.hasRasterSupport()!=DataStoreProviderFactory.YES ):
+      self.openAsTable()
       return
     listfiles = (File(self.__path),)
     actions = PluginsLocator.getActionInfoManager()
     addlayer = actions.getAction("view-layer-add")
     addlayer.execute((listfiles,))
 
+class HomeFolder(FolderNode):
+  def __init__(self, parent):
+    FolderNode.__init__(self, parent, 
+      os.getenv("HOME"), 
+      ToolsLocator.getI18nManager().getTranslation("_User_folder"),
+      icon=getResource(__file__,"images","Home.png")
+    ) 
+      
+class DataFolderFolder(FolderNode):
+  def __init__(self, parent, path):
+    FolderNode.__init__(self, parent, path, 
+      ToolsLocator.getI18nManager().getTranslation("_Data_folder"),
+      icon=getResource(__file__,"images","DataFolder.png")
+    )
+
+class BrokenNode(CatalogSimpleNode):
+  def __init__(self, parent, path):
+    CatalogSimpleNode.__init__(self, parent, icon=getResource(__file__,"images","FolderClosedRemoved.png"))
+    self.__path = path
+    self.__label = os.path.basename(self.__path)
+
+  def toString(self):
+    return  unicode(self.__label, 'utf-8') 
+
+class LinkedFolder(FolderNode):
+  def __init__(self, parent, linkfile):
+    FolderNode.__init__(*self.__buildFolderNodeParams(parent,linkfile))
+    self.__linkfile = linkfile
+
+  def __buildFolderNodeParams(self, parent, linkfile):
+    configfile = ConfigParser.ConfigParser()
+    configfile.read(linkfile)
+    target = configfile.get("FolderLink","target")
+    return (self, parent, target)
+    
+  def createPopup(self):
+    i18n = ToolsLocator.getI18nManager()
+    menu = JPopupMenu()
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_in_filesystem_explorer"),self.openInFilesystemBrowser))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Remove_folder_from_catalog"),self.removeFolder))
+    return menu    
+
+  def removeFolder(self, event=None):
+    pass
+    
 def main(*args):
     pass

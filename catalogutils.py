@@ -51,7 +51,7 @@ def getIconFromFile(pathname):
   global iconTheme
 
   if explorer == None:
-    explorer = DALLocator.getDataManager().openServerExplorer("FilesystemExplorer", "initialpath", os.path.dirname(pathname))
+    explorer = getDataManager().openServerExplorer("FilesystemExplorer", "initialpath", os.path.dirname(pathname))
     
   providerName = explorer.getProviderName(File(pathname))
   if providerName != None:
@@ -80,6 +80,22 @@ def getIconFromParams(params):
     return icon
   return None
 
+def getProviderFactoryFromFile(pathname):
+  global explorer
+
+  if explorer == None:
+    explorer = getDataManager().openServerExplorer("FilesystemExplorer", "initialpath", os.path.dirname(pathname))
+  providerName = explorer.getProviderName(File(pathname))
+  if providerName == None:
+    return None
+  factory = getDataManager().getStoreProviderFactory(providerName)
+  return factory
+
+def getProviderFactoryFromParams(params):
+  providerName = params.getDataStoreName()
+  factory = getDataManager().getStoreProviderFactory(providerName)
+  return factory
+  
 def createJMenuItem(label, function):
     item = JMenuItem(label)
     item.addActionListener(ActionListenerAdapter(function))

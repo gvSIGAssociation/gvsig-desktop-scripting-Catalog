@@ -12,8 +12,14 @@ from org.gvsig.fmap.dal.store.jdbc import JDBCServerExplorerParameters
 from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.tools.swing.api import ToolsSwingLocator
+from org.gvsig.tools import ToolsLocator
 
-from catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
+from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
+
+from org.gvsig.fmap.dal.exception import ValidateDataParametersException
+
+from org.gvsig.app import ApplicationLocator
+from org.gvsig.app.project.documents.table import TableManager
 
 class Databases(CatalogNode):
   def __init__(self, parent):
@@ -31,22 +37,25 @@ class Databases(CatalogNode):
     self.reload()
     
   def toString(self):
-    return "Databases"
+    i18n = ToolsLocator.getI18nManager()
+    return i18n.getTranslation("_Databases")
 
   def createPopup(self):
+    i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
-    menu.add(createJMenuItem("Add database",self.mnuAddDatabase))
-    menu.add(createJMenuItem("Refresh",self.mnuRefresh))
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_database"),self.mnuAddDatabase))
+    menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.mnuRefresh))
     return menu    
 
   def mnuAddDatabase(self, event):
+    i18n = ToolsLocator.getI18nManager()
     manager = DALSwingLocator.getSwingManager()
     panel = manager.createJDBCConnectionPanel()
     winmgr = ToolsSwingLocator.getWindowManager()
     dialog = winmgr.createDialog(
       panel.asJComponent(),
-      "Catalog",
-      "Database connections",
+      i18n.getTranslation("_Catalog"),
+      i18n.getTranslation("_Database_connections"),
       winmgr.BUTTONS_OK_CANCEL
     )
     dialog.show(winmgr.MODE.DIALOG)
@@ -74,21 +83,24 @@ class Database(CatalogNode):
       tablesParams.sort(lambda x,y : cmp(x.getTable().lower(),y.getTable().lower()))
       for tableParams in tablesParams:
         self.add(Table(self, tableParams))
-    except Throwable,ex:
+    except Throwable:
       pass
     self.reload()
   
   def createPopup(self):
+    i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
-    menu.add(createJMenuItem("Edit parameters",self.mnuEditParameters))
-    menu.add(createJMenuItem("Refresh",self.mnuRefresh))
+    menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
+    menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.mnuRefresh))
     menu.add(JSeparator())
-    menu.add(createJMenuItem("Remove database",self.mnuRemoveDatabase))
+    menu.add(createJMenuItem(i18n.getTranslation("_Remove_database"),self.mnuRemoveDatabase))
     return menu    
 
   def mnuRemoveDatabase(self, event):
     #print "RemoveFromBookmarks ", self
-    if confirmDialog("Are you sure to remove '%s' ?" % str(self), "Catalog",YES_NO,QUESTION)==YES:
+    i18n = ToolsLocator.getI18nManager()
+    prompt = i18n.getTranslation("_Are_you_sure_to_remove_{0}", (str(self),))
+    if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION)==YES:
       dataManager = getDataManager()
       pool = dataManager.getDataServerExplorerPool()
       pool.remove(str(self))
@@ -114,10 +126,34 @@ class Table(CatalogSimpleNode):
     return self.__params.getTable()
     
   def createPopup(self):
+    i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
-    menu.add(createJMenuItem("Edit parameters",self.mnuEditParameters))
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
+    menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
     return menu    
 
+  def addToBookmarks(self, event=None):
+    i18n = ToolsLocator.getI18nManager()
+    treePath = self.getTreePath()
+    bookmarks = treePath[0].getBookmarks()
+    name = self.__params.getTable()
+    try:
+      self.__params.validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recuse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values"+"\n\n"+ex.getLocalizedMessageStack()))
+      return
+    bookmarks.addParamsToBookmarks(name,self.__params)
+    
+  def openAsTable(self, event=None):
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    projectManager = ApplicationLocator.getManager().getProjectManager()
+    tableDoc = projectManager.createDocument(TableManager.TYPENAME)
+    tableDoc.setStore(store)
+    projectManager.getCurrentProject().addDocument(tableDoc)
+    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+  
   def mnuEditParameters(self, event):
     manager = DALSwingLocator.getDataStoreParametersPanelManager()
     panel = manager.createDataStoreParametersPanel(self.__params)
