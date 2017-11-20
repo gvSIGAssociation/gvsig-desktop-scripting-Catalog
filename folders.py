@@ -214,7 +214,7 @@ class FileNode(CatalogSimpleNode):
     try:
       self.getParams().validate()
     except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recuse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values"+"\n\n"+ex.getLocalizedMessageStack()))
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recurse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
       return
     bookmarks.addParamsToBookmarks(name,self.getParams())
     
