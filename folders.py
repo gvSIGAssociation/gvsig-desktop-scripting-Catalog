@@ -208,8 +208,7 @@ class FileNode(CatalogSimpleNode):
 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
-    treePath = self.getTreePath()
-    bookmarks = treePath[0].getBookmarks()
+    bookmarks = self.getTree().getBookmarks()
     name = os.path.basename(self.__path)
     try:
       self.getParams().validate()
@@ -231,6 +230,7 @@ class FileNode(CatalogSimpleNode):
     projectManager = ApplicationLocator.getManager().getProjectManager()
     tableDoc = projectManager.createDocument(TableManager.TYPENAME)
     tableDoc.setStore(store)
+    tableDoc.setName(str(self))
     projectManager.getCurrentProject().addDocument(tableDoc)
     ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
   
@@ -289,11 +289,12 @@ class LinkedFolder(FolderNode):
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Open_in_filesystem_explorer"),self.openInFilesystemBrowser))
     menu.add(JSeparator())
-    menu.add(createJMenuItem(i18n.getTranslation("_Remove_folder_from_catalog"),self.removeFolder))
+    menu.add(createJMenuItem(i18n.getTranslation("_Remove_folder_from_catalog"),self.removeLink))
     return menu    
 
-  def removeFolder(self, event=None):
-    pass
+  def removeLink(self, event=None):
+    os.remove(self.__linkfile)
+    self.getParent().remove(self)
     
 def main(*args):
     pass

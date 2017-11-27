@@ -263,6 +263,7 @@ class Bookmark(CatalogSimpleNode):
     projectManager = ApplicationLocator.getManager().getProjectManager()
     tableDoc = projectManager.createDocument(TableManager.TYPENAME)
     tableDoc.setStore(store)
+    tableDoc.setName(str(self))
     projectManager.getCurrentProject().addDocument(tableDoc)
     ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
   

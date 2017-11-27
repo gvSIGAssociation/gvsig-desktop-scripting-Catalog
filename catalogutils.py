@@ -174,27 +174,37 @@ class CatalogSimpleNode(TreeNode, ActionListener):
 class CatalogNode(CatalogSimpleNode):
   def __init__(self, parent, icon=None):
     CatalogSimpleNode.__init__(self,parent, icon=icon)
-    self.__children = list()
-
+    self._children = None
+    
   def toString(self):
     return "node"
-    
+
+  def _getChildren(self):
+    #print "### CatalogNode._getChildren"
+    if self._children == None:
+      self._children = list()
+    return self._children
+  
   def getAllowsChildren(self):
     # Returns true if the receiver allows children.
+    #print "### CatalogNode.getAllowsChildren"
     return True
 
   def getChildAt(self, childIndex):
     # Returns the child TreeNode at index childIndex.
-    return self.__children[childIndex]
+    #print "### CatalogNode.getChildAt", childIndex
+    return self._getChildren()[childIndex]
     
   def getChildCount(self):
     # Returns the number of children TreeNodes the receiver contains.
-    return len(self.__children)
+    #print "### CatalogNode.getChildCount"
+    return len(self._getChildren())
 
   def getIndex(self, node):
     # Returns the index of node in the receivers children.
+    #print "### CatalogNode.getIndex", node
     index = 0
-    for x in self.__children:
+    for x in self._getChildren():
       if node == x:
         return index
       index += 1
@@ -202,33 +212,43 @@ class CatalogNode(CatalogSimpleNode):
      
   def isLeaf(self):
     # Returns true if the receiver is a leaf.
+    #print "### CatalogNode.isLeaf"
     return False
 
   def expand(self, node=None):
+    #print "### CatalogNode.expand", node
     if node == None:
       node = self
     treepath = TreePath(self.getTreePath())
     self.getTree().expandPath(treepath)  
       
   def reload(self):
-    #print ">>> reload "
+    #print ">>> reload enter", self.__class__.__name__
     root = self.getTree().getModel().getRoot()
     expandeds = self.getTree().getExpandedDescendants(TreePath(root))
+    #print ">>> reload ", self.__class__.__name__, self.getTree().getModel().__class__.__name__
     self.getTree().getModel().reload()
     if expandeds != None:
       for treePath in expandeds:
-        self.getTree().expandPath(treePath)
+        try:
+          self.getTree().expandPath(treePath)
+        except:
+          pass
+    #print ">>> reload exit", self.__class__.__name__
 
   def add(self, element):
-    self.__children.append(element)
+    #print "### CatalogNode.add", element
+    self._getChildren().append(element)
     self.reload()
     
   def remove(self, element):
-    self.__children.remove(element)
+    #print "### CatalogNode.remove", element
+    self._getChildren().remove(element)
     self.reload()
 
   def __delslice__(self, i, j):
-    del self.__children[i:j]
+    #print "### CatalogNode.__delslice__", i, j
+    del self._getChildren()[i:j]
 
 
 
