@@ -1,5 +1,5 @@
 #
-#Sun Nov 19 18:56:36 CET 2017
+#Wed Nov 29 17:30:12 CET 2017
 owner=gvSIG
 code=Catalog
 java-version=j1_7
@@ -9,13 +9,14 @@ version=1.0.0-10
 state=testing
 operating-system=all
 dependencies=
-sources-url=https\://github.com/gvSIGAssociation/gvsig-desktop-scripting-Catalog
+sources-url=
 web-url=http\://www.gvsig.com
 architecture=all
 model-version=1.0.1
 categories=View
-description=Add the catalog to the ToC area of the View.\nThe catalog allows\:\n- Manage "markers" to the layers and tables that we most use.\n- Browse through the system folders to add quickly\n  layers to the View or tables to the Project.\n- View and add the connections that we have defined to databases,\n   and for each of them list the tables of this, allowing\n   add them quickly to the View.
-owner-url=http\://www.gvsig.com
+description=Add the catalog to the ToC area of the View.\n\nThe catalog allows\:\n\n* Manage "markers" to the layers and tables that we most use.\n* Browse through the system folders to add quickly layers to the \n  View or tables to the Project.\n* View, add and remove the connections that we have defined to databases, \n  and for each of them list the tables of this, allowing to remove tables and \n  add them quickly to the View.
+owner-url=
 buildNumber=10
+download-url=http\://devel.gvsig.org/download/projects/gvsig-scripts/pool/Catalog/gvSIG-desktop-2.4.0-Catalog-1.0.0-10-testing-all-all-j1_7.gvspkg
 gvSIG-version=2.4.0
 name=Catalog
