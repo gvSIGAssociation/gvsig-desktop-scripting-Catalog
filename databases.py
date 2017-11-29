@@ -63,7 +63,7 @@ class Databases(CatalogNode):
     dialog.show(winmgr.MODE.DIALOG)
     if dialog.getAction()==winmgr.BUTTON_OK:
       panel.getServerExplorerParameters() # Los añade al pool
-      self._load()
+      self.__load()
   
   def update(self, event=None):
     SwingUtilities.invokeLater(self.__load)
