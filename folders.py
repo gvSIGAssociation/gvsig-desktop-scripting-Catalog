@@ -34,6 +34,10 @@ from gvsig.commonsdialog import openFolderDialog
 from gvsig.commonsdialog import inputbox
 from gvsig.commonsdialog import QUESTION
 
+from gvsig import logger
+from gvsig import LOGGER_WARN
+import sys
+
 def getFoldersFolder():
   f = os.path.join(getDataFolder(),"folders")
   if not os.path.exists(f):
@@ -101,21 +105,24 @@ class FolderNode(CatalogSimpleNode):
     else:
       self.__label = label
     self.__files = list()
-    ls = os.listdir(self.__path)
-    lsdirs = list()
-    lsfiles = list()
-    for f in ls:
-      x = os.path.join(self.__path,f)
-      if f[0]!=".":
-        if os.path.isdir(x):
-          lsdirs.append(x)
-        else:
-          lsfiles.append(x)
-    lsdirs.sort(key=lambda s: s.lower())
-    lsfiles.sort(key=lambda s: s.lower())
-    self.__files.extend(lsdirs)
-    self.__files.extend(lsfiles)
-    
+    try:
+      ls = os.listdir(self.__path)
+      lsdirs = list()
+      lsfiles = list()
+      for f in ls:
+        x = os.path.join(self.__path,f)
+        if f[0]!=".":
+          if os.path.isdir(x):
+            lsdirs.append(x)
+          else:
+            lsfiles.append(x)
+      lsdirs.sort(key=lambda s: s.lower())
+      lsfiles.sort(key=lambda s: s.lower())
+      self.__files.extend(lsdirs)
+      self.__files.extend(lsfiles)
+    except:
+      logger("Can't get file list from '%s'" % self.__path,LOGGER_WARN, sys.exc_info()[1])
+      
   def toString(self):
     return  unicode(self.__label, 'utf-8') 
 
@@ -252,7 +259,7 @@ class FileNode(CatalogSimpleNode):
 class HomeFolder(FolderNode):
   def __init__(self, parent):
     FolderNode.__init__(self, parent, 
-      os.getenv("HOME"), 
+      os.path.expanduser('~'), 
       ToolsLocator.getI18nManager().getTranslation("_User_folder"),
       icon=getResource(__file__,"images","Home.png")
     ) 
