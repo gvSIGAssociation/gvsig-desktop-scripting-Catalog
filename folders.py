@@ -133,9 +133,9 @@ class FolderNode(CatalogSimpleNode):
     return menu    
 
   def openInFilesystemBrowser(self,event=None):
-    uri = File(self.__path).toURL().toURI()
+    f = File(self.__path)
     desktop = ToolsUtilLocator.getToolsUtilManager().createDesktopOpen()
-    desktop.browse(uri)
+    desktop.open(f)
       
   def children(self):
     # Returns the children of the receiver as an Enumeration.
