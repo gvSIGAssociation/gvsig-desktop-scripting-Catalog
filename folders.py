@@ -215,7 +215,7 @@ class FileNode(CatalogSimpleNode):
 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
-    bookmarks = self.getTree().getBookmarks()
+    bookmarks = self.getRoot().getBookmarks()
     name = os.path.basename(self.__path)
     try:
       self.getParams().validate()
