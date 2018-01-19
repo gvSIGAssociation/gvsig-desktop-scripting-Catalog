@@ -150,8 +150,7 @@ class Table(CatalogSimpleNode):
 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
-    treePath = self.getTreePath()
-    bookmarks = treePath[0].getBookmarks()
+    bookmarks = self.getRoot().getBookmarks()
     name = self.__params.getTable()
     try:
       self.__params.validate()

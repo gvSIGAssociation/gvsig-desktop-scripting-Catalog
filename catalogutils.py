@@ -112,6 +112,9 @@ class CatalogSimpleNode(TreeNode, ActionListener):
   def getTree(self):
     return self.__parent.getTree()
     
+  def getRoot(self):
+    return self.__parent.getRoot()
+    
   def createPopup(self):
     return None
 

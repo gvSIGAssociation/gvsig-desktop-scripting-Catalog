@@ -1,11 +1,11 @@
 #
-#Fri Dec 01 00:14:23 CET 2017
+#Thu Dec 28 12:44:34 CET 2017
 owner=gvSIG
 code=Catalog
 java-version=j1_7
 official=true
 type=Script
-version=1.0.0-11
+version=1.0.0-12
 state=testing
 operating-system=all
 dependencies=
@@ -16,6 +16,6 @@ model-version=1.0.1
 categories=View
 description=Add the catalog to the ToC area of the View.\n\nThe catalog allows\:\n\n* Manage "markers" to the layers and tables that we most use.\n* Browse through the system folders to add quickly layers to the \n  View or tables to the Project.\n* View, add and remove the connections that we have defined to databases, \n  and for each of them list the tables of this, allowing to remove tables and \n  add them quickly to the View.
 owner-url=
-buildNumber=11
+buildNumber=12
 gvSIG-version=2.4.0
 name=Catalog

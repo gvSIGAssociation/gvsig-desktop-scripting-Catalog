@@ -54,6 +54,9 @@ class Catalog(CatalogNode):
   def getTreePath(self):
     return [ self ]
     
+  def getRoot(self):
+    return self
+        
   def getTree(self):
     return self.__tree
     
