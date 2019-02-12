@@ -5,5 +5,6 @@ import gvsig
 from addons.Catalog.actions import selfRegister
 
 def main(*args):
+  script.registerDataFolder("Catalog")
   selfRegister()
 
