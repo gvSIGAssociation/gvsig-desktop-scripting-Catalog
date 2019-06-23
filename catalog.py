@@ -24,11 +24,14 @@ import addons.Catalog.bookmarks
 reload(addons.Catalog.bookmarks)
 import addons.Catalog.databases
 reload(addons.Catalog.databases)
+import addons.Catalog.storesrepository
+reload(addons.Catalog.storesrepository)
 
 from addons.Catalog.catalogutils import CatalogNode
 from addons.Catalog.folders import Folders
 from addons.Catalog.bookmarks import Bookmarks, BookmarkFolder
 from addons.Catalog.databases import Databases
+from addons.Catalog.storesrepository import StoresRepository
 
 class Catalog(CatalogNode):
   def __init__(self, tree):
@@ -37,6 +40,7 @@ class Catalog(CatalogNode):
     self.add(Bookmarks(self))
     self.add(Folders(self))
     self.add(Databases(self))
+    self.add(StoresRepository(self))
 
   def getBookmarks(self):
     return self.getChildAt(0)

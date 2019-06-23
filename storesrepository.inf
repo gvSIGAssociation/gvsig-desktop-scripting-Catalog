@@ -1,15 +1,12 @@
-[script]
+[Script]
 enable = true
+main = main
+Lang = python
 
 [Unit]
 type = Script
-name = catalog
+name = storesrepository
 description = 
 createdBy = 
 version = 
-
-[Script]
-main = main
-Lang = python
-enable = true
 
