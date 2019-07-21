@@ -103,6 +103,7 @@ class Database(CatalogNode):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.editParameters))
+    menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Remove_database"),self.removeDatabase))
@@ -125,6 +126,13 @@ class Database(CatalogNode):
     manager = DALSwingLocator.getDataStoreParametersPanelManager()
     panel = manager.createDataStoreParametersPanel(self.__params)
     manager.showPropertiesDialog(self.__params, panel)
+    
+  def copyURL(self, event=None):
+    application = ApplicationLocator.getApplicationManager()
+    url = self.__params.getDynValue("URL")
+    if url.startswith("jdbc:h2:file:"):
+      url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
+    application.putInClipboard(url)
     
   def toString(self):
     return  self.__label
