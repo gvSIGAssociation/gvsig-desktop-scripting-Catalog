@@ -7,12 +7,14 @@ from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNI
 from java.lang import Throwable
 from javax.swing import JPopupMenu
 from javax.swing import JSeparator
+from javax.swing import JMenuItem
 
 from org.gvsig.fmap.dal.store.jdbc import JDBCServerExplorerParameters
 from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools import ToolsLocator
+from org.gvsig.tools.swing.api.windowmanager import WindowManager
 
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
 
@@ -22,6 +24,8 @@ from org.gvsig.app import ApplicationLocator
 from org.gvsig.app.project.documents.table import TableManager
 
 from javax.swing import SwingUtilities
+
+from  addons.Catalog.cataloglocator import getCatalogManager
 
 class Databases(CatalogNode):
   def __init__(self, parent):
@@ -103,7 +107,6 @@ class Database(CatalogNode):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.editParameters))
-    menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Remove_database"),self.removeDatabase))
@@ -127,13 +130,6 @@ class Database(CatalogNode):
     panel = manager.createDataStoreParametersPanel(self.__params)
     manager.showPropertiesDialog(self.__params, panel)
     
-  def copyURL(self, event=None):
-    application = ApplicationLocator.getApplicationManager()
-    url = self.__params.getDynValue("URL")
-    if url.startswith("jdbc:h2:file:"):
-      url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
-    application.putInClipboard(url)
-    
   def toString(self):
     return  self.__label
 
@@ -150,11 +146,32 @@ class Table(CatalogSimpleNode):
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+    menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
+    menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Remove_table"),self.removeTable))
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.editParameters))
+    actions = getCatalogManager().getActions("DATABASE_TABLE", self.__params)
+    if len(actions)>0 :
+      menu.add(JSeparator())
+      for action in actions:
+        menu.add(JMenuItem(action))
     return menu    
+
+  def copyURL(self, event=None):
+    application = ApplicationLocator.getApplicationManager()
+    url = self.__params.getDynValue("URL")
+    if url.startswith("jdbc:h2:file:"):
+      url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
+    application.putInClipboard(url)
+    
+  def openAsForm(self, *args):
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    swingManager = DALSwingLocator.getSwingManager()
+    form = swingManager.createJFeaturesForm(store)
+    form.showForm(WindowManager.MODE.WINDOW)
 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()

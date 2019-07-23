@@ -10,11 +10,15 @@ from java.io import File
 from org.gvsig.tools import ToolsLocator
 from org.gvsig.andami import PluginsLocator
 from javax.swing import JPopupMenu
+from javax.swing import JMenuItem
 
 from addons.Catalog.catalogutils import CatalogSimpleNode, CatalogNode, getIconFromFile
 from addons.Catalog.catalogutils import createJMenuItem, getDataManager, getProviderFactoryFromFile
 from addons.Catalog.catalogutils import getDataFolder
 
+from  addons.Catalog.cataloglocator import getCatalogManager
+
+from org.gvsig.tools.swing.api.windowmanager import WindowManager
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 
 from org.gvsig.app import ApplicationLocator
@@ -208,10 +212,23 @@ class FileNode(CatalogSimpleNode):
         menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
       if factory.hasTabularSupport()==DataStoreProviderFactory.YES:
         menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
+        menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+    menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
-    return menu    
+    actions = getCatalogManager().getActions("FOLDERS_FILE", self.__params)
+    if len(actions)>0 :
+      menu.add(JSeparator())
+      for action in actions:
+        menu.add(JMenuItem(action))
+    return menu
+    
+  def openAsForm(self, *args):
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    swingManager = DALSwingLocator.getSwingManager()
+    form = swingManager.createJFeaturesForm(store)
+    form.showForm(WindowManager.MODE.WINDOW)
 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()

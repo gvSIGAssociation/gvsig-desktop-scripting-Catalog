@@ -1,15 +1,12 @@
-[script]
+[Script]
 enable = true
+main = main
+Lang = python
 
 [Unit]
 type = Script
-name = folders
+name = dynobjectadapter
 description = 
 createdBy = 
 version = 
-
-[Script]
-main = main
-Lang = python
-enable = true
 

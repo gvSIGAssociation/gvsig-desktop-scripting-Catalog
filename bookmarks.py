@@ -21,6 +21,10 @@ from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal import DALLocator
 from org.gvsig.tools.dispose import DisposeUtils
 from org.gvsig.tools import ToolsLocator
+from org.gvsig.tools.swing.api.windowmanager import WindowManager
+from javax.swing import JMenuItem
+
+from  addons.Catalog.cataloglocator import getCatalogManager
 
 from addons.Catalog.catalogutils import CatalogSimpleNode, CatalogNode, createJMenuItem
 from addons.Catalog.catalogutils import getIconFromParams, getDataFolder, getProviderFactoryFromParams
@@ -248,12 +252,24 @@ class Bookmark(CatalogSimpleNode):
           menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
         if factory.hasTabularSupport()==DataStoreProviderFactory.YES:
           menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
+          menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
       menu.add(JSeparator())
       menu.add(createJMenuItem(i18n.getTranslation("_Chage_name"),self.mnuChangeName))
       menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
       menu.add(JSeparator())    
     menu.add(createJMenuItem(i18n.getTranslation("_Remove_bookmark"),self.mnuRemoveFromBookmarks))
+    actions = getCatalogManager().getActions("BOOKMARKS_BOOKMARK", self.__params)
+    if len(actions)>0 :
+      menu.add(JSeparator())
+      for action in actions:
+        menu.add(JMenuItem(action))
     return menu    
+ 
+  def openAsForm(self, *args):
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    swingManager = DALSwingLocator.getSwingManager()
+    form = swingManager.createJFeaturesForm(store)
+    form.showForm(WindowManager.MODE.WINDOW)
   
   def openAsTable(self, event=None):
     factory = getProviderFactoryFromParams(self.__params)

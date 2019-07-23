@@ -7,11 +7,13 @@ from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNI
 from java.lang import Throwable
 from javax.swing import JPopupMenu
 from javax.swing import JSeparator
+from javax.swing import JMenuItem
 
 from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools import ToolsLocator
+from org.gvsig.tools.swing.api.windowmanager import WindowManager
 
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
 
@@ -22,6 +24,7 @@ from org.gvsig.app.project.documents.table import TableManager
 
 from javax.swing import SwingUtilities
 
+from  addons.Catalog.cataloglocator import getCatalogManager
 
 class StoresRepository(CatalogNode):
   def __init__(self, parent):
@@ -66,8 +69,11 @@ class SubstoresRepository(CatalogNode):
     #print "### SubstoresRepository.__load"
     self._children = list()
     try :
-      names = self.subrepo.keySet()
-      if names != None:
+      names0 = self.subrepo.keySet()
+      if names0 != None:
+        names = list()
+        names.extend(names0)
+        names.sort()
         for name in names:
           params = self.subrepo.get(name)
           self._children.append(Table(self, name, params))
@@ -99,12 +105,33 @@ class Table(CatalogSimpleNode):
   def createPopup(self):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
-    menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.actionPerformed))
-    menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.addToView))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.actionPerformed))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
+    menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_View_parameters"),self.editParameters))
+    actions = getCatalogManager().getActions("STORES_REPOSITORY_TABLE", self.__params)
+    if len(actions)>0 :
+      menu.add(JSeparator())
+      for action in actions:
+        menu.add(JMenuItem(action))
     return menu    
+
+  def copyURL(self, event=None):
+    application = ApplicationLocator.getApplicationManager()
+    url = self.__params.getDynValue("URL")
+    if url.startswith("jdbc:h2:file:"):
+      url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
+    application.putInClipboard(url)
+ 
+  def openAsForm(self, *args):
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    swingManager = DALSwingLocator.getSwingManager()
+    form = swingManager.createJFeaturesForm(store)
+    form.showForm(WindowManager.MODE.WINDOW)
 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
@@ -140,5 +167,5 @@ def main(*args):
     repo = dataManager.getStoresRepository()
     for subrepo in repo.getSubrepositories():
       print subrepo.getID(), subrepo.getLabel()
-      ks = subrepo.keySet();
+      ks = subrepo.keySet()
       print ks

@@ -2,9 +2,12 @@
 
 import gvsig
 
-from addons.Catalog.actions import selfRegister
+from addons.Catalog import actions
+from addons.Catalog import cataloglocator
 
 def main(*args):
   script.registerDataFolder("Catalog")
-  selfRegister()
+  cataloglocator.selfRegister()
+  actions.selfRegister()
+  
 
