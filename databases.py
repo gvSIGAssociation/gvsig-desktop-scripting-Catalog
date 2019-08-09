@@ -107,11 +107,20 @@ class Database(CatalogNode):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.editParameters))
+    menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
+    menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Remove_database"),self.removeDatabase))
     return menu    
 
+  def copyURL(self, event=None):
+    application = ApplicationLocator.getApplicationManager()
+    url = self.__params.getDynValue("URL")
+    if url.startswith("jdbc:h2:file:"):
+      url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
+    application.putInClipboard(url)
+    
   def removeDatabase(self, event=None):
     #print "RemoveFromBookmarks ", self
     i18n = ToolsLocator.getI18nManager()
@@ -149,7 +158,6 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
-    menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Remove_table"),self.removeTable))
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.editParameters))
@@ -160,13 +168,6 @@ class Table(CatalogSimpleNode):
         menu.add(JMenuItem(action))
     return menu    
 
-  def copyURL(self, event=None):
-    application = ApplicationLocator.getApplicationManager()
-    url = self.__params.getDynValue("URL")
-    if url.startswith("jdbc:h2:file:"):
-      url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
-    application.putInClipboard(url)
-    
   def openAsForm(self, *args):
     store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
     swingManager = DALSwingLocator.getSwingManager()
