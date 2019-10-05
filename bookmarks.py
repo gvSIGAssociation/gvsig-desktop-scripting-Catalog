@@ -21,6 +21,7 @@ from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal import DALLocator
 from org.gvsig.tools.dispose import DisposeUtils
 from org.gvsig.tools import ToolsLocator
+from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 from javax.swing import JMenuItem
 
@@ -234,7 +235,10 @@ class Bookmark(CatalogSimpleNode):
       self.__label = os.path.splitext(os.path.basename(self.__path))[0]
     else:
       self.__label = label
-
+  
+  def getParams(self):
+    return self.__params
+        
   def getPath(self):
     return self.__path
     
@@ -253,6 +257,7 @@ class Bookmark(CatalogSimpleNode):
         if factory.hasTabularSupport()==DataStoreProviderFactory.YES:
           menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
           menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+      menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
       menu.add(JSeparator())
       menu.add(createJMenuItem(i18n.getTranslation("_Chage_name"),self.mnuChangeName))
       menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
@@ -271,6 +276,19 @@ class Bookmark(CatalogSimpleNode):
     form = swingManager.createJFeaturesForm(store)
     form.showForm(WindowManager.MODE.WINDOW)
   
+  def openSearchDialog(self, *args):
+    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
+    i18n = ToolsLocator.getI18nManager()
+    swingManager = DALSwingLocator.getSwingManager()
+    winmgr = ToolsSwingLocator.getWindowManager()
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    panel = swingManager.createFeatureStoreSearchPanel(store)
+    winmgr.showWindow(
+            panel.asJComponent(), 
+            i18n.getTranslation("Search: ") + store.getName(), 
+            WindowManager.MODE.WINDOW
+    )
+    
   def openAsTable(self, event=None):
     factory = getProviderFactoryFromParams(self.__params)
     if factory==None or factory.hasTabularSupport()!=DataStoreProviderFactory.YES:

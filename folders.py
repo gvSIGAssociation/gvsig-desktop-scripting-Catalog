@@ -3,6 +3,7 @@
 import gvsig
 from gvsig import getResource
 
+import thread
 import os
 import ConfigParser
 
@@ -18,6 +19,7 @@ from addons.Catalog.catalogutils import getDataFolder
 
 from  addons.Catalog.cataloglocator import getCatalogManager
 
+from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 
@@ -42,6 +44,11 @@ from gvsig import logger
 from gvsig import LOGGER_WARN
 import sys
 
+try:
+  from addons.ScriptingComposerTools.abeille.abeille import launchAbeille
+except:
+  launchAbeille = None
+  
 def getFoldersFolder():
   f = os.path.join(getDataFolder(),"folders")
   if not os.path.exists(f):
@@ -213,23 +220,66 @@ class FileNode(CatalogSimpleNode):
       if factory.hasTabularSupport()==DataStoreProviderFactory.YES:
         menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
         menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Edit_parameters"),self.mnuEditParameters))
+    if launchAbeille!=None:
+      menu.add(JSeparator())
+      menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),self.openFormEditor))
+    
     actions = getCatalogManager().getActions("FOLDERS_FILE", self.__params)
     if len(actions)>0 :
       menu.add(JSeparator())
       for action in actions:
         menu.add(JMenuItem(action))
     return menu
+
+  def openFormEditor(self, *args):
+    #try:
+    #  from addons.ScriptingComposerTools.abeille.abeille import launchAbeille
+    #except:
+    #  launchAbeille = None
+
+    #if launchAbeille!=None:
+    #  menu.add(JSeparator())
+    #  menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),self.openFormEditor))
+    if launchAbeille==None:
+      return
+    folder = File(self.__path).getParentFile()
+    thread.start_new_thread(launchAbeille,(folder,))
     
   def openAsForm(self, *args):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
     swingManager = DALSwingLocator.getSwingManager()
     form = swingManager.createJFeaturesForm(store)
     form.showForm(WindowManager.MODE.WINDOW)
 
+  def openSearchDialog(self, *args):
+    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
+    swingManager = DALSwingLocator.getSwingManager()
+    winmgr = ToolsSwingLocator.getWindowManager()
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    panel = swingManager.createFeatureStoreSearchPanel(store)
+    winmgr.showWindow(
+            panel.asJComponent(), 
+            i18n.getTranslation("Search: ") + store.getName(), 
+            WindowManager.MODE.WINDOW
+    )
+    
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
     bookmarks = self.getRoot().getBookmarks()
@@ -247,6 +297,12 @@ class FileNode(CatalogSimpleNode):
     manager.showPropertiesDialog(self.getParams(), panel)
 
   def openAsTable(self, event=None):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     factory = getProviderFactoryFromFile(self.__path)
     if factory==None or factory.hasTabularSupport()!=DataStoreProviderFactory.YES:
       return

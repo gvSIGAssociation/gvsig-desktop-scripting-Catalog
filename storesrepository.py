@@ -26,6 +26,11 @@ from javax.swing import SwingUtilities
 
 from  addons.Catalog.cataloglocator import getCatalogManager
 
+try:
+  from addons.ScriptingComposerTools.abeille.abeille import launchAbeille
+except:
+  launchAbeille = None
+    
 class StoresRepository(CatalogNode):
   def __init__(self, parent):
     CatalogNode.__init__(self,parent, icon=getResource(__file__,"images","StoresRepository.png"))
@@ -98,7 +103,10 @@ class Table(CatalogSimpleNode):
     CatalogSimpleNode.__init__(self, parent, icon=getIconFromParams(params))
     self.__label = label
     self.__params = params
-    
+  
+  def getParams(self):
+    return self.__params
+            
   def toString(self):
     return  self.__label
     
@@ -108,11 +116,16 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.addToView))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.actionPerformed))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
     menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_View_parameters"),self.editParameters))
+    if launchAbeille!=None:
+      menu.add(JSeparator())
+      menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),self.openFormEditor))
+      menu.add(createJMenuItem(i18n.getTranslation("_Upload_resource"),self.uploadResource))
     actions = getCatalogManager().getActions("STORES_REPOSITORY_TABLE", self.__params)
     if len(actions)>0 :
       menu.add(JSeparator())
@@ -120,6 +133,28 @@ class Table(CatalogSimpleNode):
         menu.add(JMenuItem(action))
     return menu    
 
+
+  def openFormEditor(self, *args):
+    if launchAbeille==None:
+      return
+    msgbox("Show form editor for database resources not yet implemented")
+    
+    # Si el recurso existe en la BBDD sacarlo a una carpeta temporal
+    # si no existe crear en la carpeta temporal un jfrm sin campos
+    # asignar a folder la carpeta temporal donde se ha dejado el jfrm
+    
+    #folder = ...
+    #thread.start_new_thread(launchAbeille,(folder,))
+    
+  def uploadResource(self, *args):
+    if launchAbeille==None:
+      return
+    msgbox("Upload rsources to database not yet implemented")
+
+    # Abrir el selector de fichero en la carpeta temporal de formularios
+    # y el fichero jfrm que corresponda a la tabla seleccionada.
+    # Una vez seleccionado subir el recurso a la BBDD.
+    
   def copyURL(self, event=None):
     application = ApplicationLocator.getApplicationManager()
     url = self.__params.getDynValue("URL")
@@ -128,11 +163,35 @@ class Table(CatalogSimpleNode):
     application.putInClipboard(url)
  
   def openAsForm(self, *args):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
     swingManager = DALSwingLocator.getSwingManager()
     form = swingManager.createJFeaturesForm(store)
     form.showForm(WindowManager.MODE.WINDOW)
 
+  def openSearchDialog(self, *args):
+    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
+    swingManager = DALSwingLocator.getSwingManager()
+    winmgr = ToolsSwingLocator.getWindowManager()
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    panel = swingManager.createFeatureStoreSearchPanel(store)
+    winmgr.showWindow(
+            panel.asJComponent(), 
+            i18n.getTranslation("Search: ") + store.getName(), 
+            WindowManager.MODE.WINDOW
+    )
+    
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
     bookmarks = self.getRoot().getBookmarks()
@@ -145,6 +204,12 @@ class Table(CatalogSimpleNode):
     bookmarks.addParamsToBookmarks(name,self.__params)
 
   def actionPerformed(self, event):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
     projectManager = ApplicationLocator.getManager().getProjectManager()
     tableDoc = projectManager.createDocument(TableManager.TYPENAME)

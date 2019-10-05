@@ -146,7 +146,10 @@ class Table(CatalogSimpleNode):
   def __init__(self, parent, params):
     CatalogSimpleNode.__init__(self, parent)
     self.__params = params
-    
+  
+  def getParams(self):
+    return self.__params
+        
   def toString(self):
     return self.__params.getTable()
     
@@ -156,6 +159,7 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
     menu.add(JSeparator())
@@ -169,11 +173,35 @@ class Table(CatalogSimpleNode):
     return menu    
 
   def openAsForm(self, *args):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
     swingManager = DALSwingLocator.getSwingManager()
     form = swingManager.createJFeaturesForm(store)
     form.showForm(WindowManager.MODE.WINDOW)
 
+  def openSearchDialog(self, *args):
+    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
+    swingManager = DALSwingLocator.getSwingManager()
+    winmgr = ToolsSwingLocator.getWindowManager()
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    panel = swingManager.createFeatureStoreSearchPanel(store)
+    winmgr.showWindow(
+            panel.asJComponent(), 
+            i18n.getTranslation("Search: ") + store.getName(), 
+            WindowManager.MODE.WINDOW
+    )
+ 
   def addToBookmarks(self, event=None):
     i18n = ToolsLocator.getI18nManager()
     bookmarks = self.getRoot().getBookmarks()
@@ -194,6 +222,12 @@ class Table(CatalogSimpleNode):
       self.getParent().update()
       
   def openAsTable(self, event=None):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
     projectManager = ApplicationLocator.getManager().getProjectManager()
     tableDoc = projectManager.createDocument(TableManager.TYPENAME)
@@ -208,6 +242,12 @@ class Table(CatalogSimpleNode):
     manager.showPropertiesDialog(self.__params, panel)
   
   def actionPerformed(self, event):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      self.getParams().validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
     layer = MapContextLocator.getMapContextManager().createLayer(self.__params.getTable(), self.__params)
     gvsig.currentView().getMainWindow().getMapControl().addLayer(layer)
     
