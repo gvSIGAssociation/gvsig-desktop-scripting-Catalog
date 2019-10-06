@@ -90,8 +90,17 @@ class SubstoresRepository(CatalogNode):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
+    menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
     return menu    
 
+  def addResource(self, *args):
+    msgbox("Add rsources to database not yet implemented")
+    
+  def getResource(self, *args):
+    msgbox("Get rsources to database not yet implemented")
+    
   def update(self, event=None):
     SwingUtilities.invokeLater(self.__load)
     
@@ -122,10 +131,12 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_View_parameters"),self.editParameters))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
+    menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
     if launchAbeille!=None:
       menu.add(JSeparator())
       menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),self.openFormEditor))
-      menu.add(createJMenuItem(i18n.getTranslation("_Upload_resource"),self.uploadResource))
     actions = getCatalogManager().getActions("STORES_REPOSITORY_TABLE", self.__params)
     if len(actions)>0 :
       menu.add(JSeparator())
@@ -146,14 +157,11 @@ class Table(CatalogSimpleNode):
     #folder = ...
     #thread.start_new_thread(launchAbeille,(folder,))
     
-  def uploadResource(self, *args):
-    if launchAbeille==None:
-      return
-    msgbox("Upload rsources to database not yet implemented")
-
-    # Abrir el selector de fichero en la carpeta temporal de formularios
-    # y el fichero jfrm que corresponda a la tabla seleccionada.
-    # Una vez seleccionado subir el recurso a la BBDD.
+  def addResource(self, *args):
+    msgbox("Add rsources to database not yet implemented")
+    
+  def getResource(self, *args):
+    msgbox("Get rsources to database not yet implemented")
     
   def copyURL(self, event=None):
     application = ApplicationLocator.getApplicationManager()
@@ -224,7 +232,12 @@ class Table(CatalogSimpleNode):
     manager.showPropertiesDialog(self.__params, panel)
   
   def addToView(self, event):
-    layer = MapContextLocator.getMapContextManager().createLayer(self.__params.getTable(), self.__params)
+    i18n = ToolsLocator.getI18nManager()
+    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
+    if store.getDefaultFeatureType().getDefaultGeometryAttribute()==None:
+      msgbox(i18n.getTranslation("_The_table_has_no_geographic_information"))
+      return
+    layer = MapContextLocator.getMapContextManager().createLayer(self.__params.getTable(), store)
     gvsig.currentView().getMainWindow().getMapControl().addLayer(layer)
     
 def main(*args):

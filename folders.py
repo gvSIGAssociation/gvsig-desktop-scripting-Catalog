@@ -141,8 +141,13 @@ class FolderNode(CatalogSimpleNode):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Open_in_filesystem_explorer"),self.openInFilesystemBrowser))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.updateFolder))
     return menu    
 
+  def updateFolder(self, *args):
+    msgbox("Update not yet implemented")
+      
   def openInFilesystemBrowser(self,event=None):
     f = File(self.__path)
     desktop = ToolsUtilLocator.getToolsUtilManager().createDesktopOpen()
