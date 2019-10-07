@@ -1,5 +1,5 @@
 #
-#Sat Oct 05 23:18:41 CEST 2019
+#Mon Oct 07 17:49:29 CEST 2019
 owner=gvSIG association
 code=Catalog
 java-version=j1_7
@@ -8,8 +8,8 @@ description=Add the catalog to the ToC area of the View.\n\nThe catalog allows\:
 official=true
 type=Script
 web-url=http\://www.gvsig.com
-version=1.0.0-22
-buildNumber=22
+version=1.0.0-23
+buildNumber=23
 owner-url=http\://www.gvsig.com/
 dependencies=
 sources-url=http\://github.com/gvSIGAssociation/gvsig-desktop-scripting-Catalog
