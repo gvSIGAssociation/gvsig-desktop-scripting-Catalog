@@ -30,7 +30,7 @@ from  addons.Catalog.cataloglocator import getCatalogManager
 from addons.Catalog.catalogutils import CatalogSimpleNode, CatalogNode, createJMenuItem
 from addons.Catalog.catalogutils import getIconFromParams, getDataFolder, getProviderFactoryFromParams
 from addons.Catalog.catalogutils import getDataManager
-
+from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks
 
 from org.gvsig.fmap.dal import DataStoreProviderFactory
 
@@ -271,35 +271,13 @@ class Bookmark(CatalogSimpleNode):
     return menu    
  
   def openAsForm(self, *args):
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    swingManager = DALSwingLocator.getSwingManager()
-    form = swingManager.createJFeaturesForm(store)
-    form.showForm(WindowManager.MODE.WINDOW)
+    openAsForm(self.getParams())
   
   def openSearchDialog(self, *args):
-    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
-    i18n = ToolsLocator.getI18nManager()
-    swingManager = DALSwingLocator.getSwingManager()
-    winmgr = ToolsSwingLocator.getWindowManager()
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    panel = swingManager.createFeatureStoreSearchPanel(store)
-    winmgr.showWindow(
-            panel.asJComponent(), 
-            i18n.getTranslation("Search: ") + store.getName(), 
-            WindowManager.MODE.WINDOW
-    )
+    openSearchDialog(self.getParams())
     
   def openAsTable(self, event=None):
-    factory = getProviderFactoryFromParams(self.__params)
-    if factory==None or factory.hasTabularSupport()!=DataStoreProviderFactory.YES:
-      return
-    store = getDataManager().openStore(factory.getName(), self.__params)
-    projectManager = ApplicationLocator.getManager().getProjectManager()
-    tableDoc = projectManager.createDocument(TableManager.TYPENAME)
-    tableDoc.setStore(store)
-    tableDoc.setName(str(self))
-    projectManager.getCurrentProject().addDocument(tableDoc)
-    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+    openAsTable(self.getParams())
   
   def mnuChangeName(self, event):
     i18n = ToolsLocator.getI18nManager()
@@ -333,31 +311,7 @@ class Bookmark(CatalogSimpleNode):
       self.getParent().reload()
         
   def actionPerformed(self, event):
-    if self.__params == None:
-      return
-    i18n = ToolsLocator.getI18nManager()
-    view = gvsig.currentView()
-    if view == None:
-      msgbox(i18n.getTranslation("_Need_an_active_view"))
-      return
-    try:
-      parameters = self.__params
-      factory = getProviderFactoryFromParams(parameters)
-      if ( factory!=None and 
-        factory.hasTabularSupport()==DataStoreProviderFactory.YES and 
-        factory.hasVectorialSupport()!=DataStoreProviderFactory.YES and
-        factory.hasRasterSupport()!=DataStoreProviderFactory.YES ):
-        self.openAsTable()
-        return
-      mapContextManager = MapContextLocator.getMapContextManager()
-      dataManager = DALLocator.getDataManager()
-      dataStore = dataManager.openStore(parameters.getDataStoreName(), parameters)
-      layer = mapContextManager.createLayer(dataStore.getName(), dataStore)
-      view.getMapContext().getLayers().addLayer(layer)
-      DisposeUtils.disposeQuietly(dataStore)
-    except:
-      logger("Can't add layer from bookmark (%s)" % self.__path, LOGGER_WARN, sys.exc_info()[1])
-    
+    openAsLayer(self.getParams())
 
 class Bookmarks(BookmarkFolder):
   def __init__(self, parent):

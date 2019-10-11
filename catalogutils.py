@@ -1,6 +1,9 @@
 # encoding: utf-8
 
 import gvsig
+
+import sys
+
 from gvsig import getResource
 from gvsig.libs.formpanel import ActionListenerAdapter
 
@@ -19,14 +22,27 @@ from javax.swing.tree import TreeNode
 from javax.swing.tree import DefaultTreeCellRenderer
 from javax.swing.tree import DefaultTreeModel
 from javax.swing.tree import TreePath
+from javax.swing import JOptionPane 
 
 import os
 
+from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNING, YES, YES_NO
+
+from org.gvsig.fmap.dal.exception import ValidateDataParametersException
+from org.gvsig.app import ApplicationLocator
+from org.gvsig.app.project.documents.table import TableManager
 from org.gvsig.tools import ToolsLocator
 from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.fmap.dal import DALLocator
 from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.andami import PluginsLocator
+from org.gvsig.tools.swing.api import ToolsSwingLocator
+from org.gvsig.tools.swing.api.windowmanager import WindowManager
+from org.gvsig.fmap.dal.swing import DALSwingLocator
+from org.gvsig.fmap.dal import DataStoreProviderFactory
+
+from gvsig import logger
+from gvsig import LOGGER_WARN
 
 
 from org.gvsig.scripting import ScriptingLocator
@@ -253,6 +269,122 @@ class CatalogNode(CatalogSimpleNode):
     #print "### CatalogNode.__delslice__", i, j
     del self._getChildren()[i:j]
 
+
+def openAsTable(params):
+    i18n = ToolsLocator.getI18nManager()
+    try:
+      params.validate()
+    except ValidateDataParametersException, ex:
+      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+      return
+    factory = getProviderFactoryFromParams(params)
+    if ( factory!=None and 
+      factory.hasTabularSupport()!=DataStoreProviderFactory.YES ):
+      msgbox(i18n.getTranslation("_The_resource_has_no_tabular_support"))
+      return
+
+    dataManager = getDataManager();
+    store = dataManager.openStore(params.getDataStoreName(), params)
+    if not store.supportReferences():
+
+      dialogs = ToolsSwingLocator.getThreadSafeDialogsManager()
+      dialogs.messageDialog(
+              "\""+ store.getName() + "\"\n"+
+              i18n.getTranslation("_The_table_has_no_primary_key_or_OID") +"\n" +
+                     i18n.getTranslation("_Many_features_selection_deletion_modification_will_not_be_available_as_they_require_it_for_proper_operation"),
+              None, 
+              i18n.getTranslation("_Warning"),
+              JOptionPane.WARNING_MESSAGE, 
+              "TableDoNotSupportReferences"
+     )
+    projectManager = ApplicationLocator.getManager().getProjectManager()
+    project = projectManager.getCurrentProject()
+
+    tableDoc = project.getDocument(store.getName(),TableManager.TYPENAME)
+      
+    if tableDoc == None:
+      tableDoc = projectManager.createDocument(TableManager.TYPENAME)
+      tableDoc.setStore(store)
+      tableDoc.setName(store.getName())
+      project.addDocument(tableDoc)
+      
+    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+
+def openAsForm(params):
+  i18n = ToolsLocator.getI18nManager()
+  try:
+    params.validate()
+  except ValidateDataParametersException, ex:
+    msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+    return
+  store = getDataManager().openStore(params.getDataStoreName(), params)
+  swingManager = DALSwingLocator.getSwingManager()
+  form = swingManager.createJFeaturesForm(store)
+  form.showForm(WindowManager.MODE.WINDOW)
+
+def openAsParameters(params):
+  manager = DALSwingLocator.getDataStoreParametersPanelManager()
+  panel = manager.createDataStoreParametersPanel(params)
+  manager.showPropertiesDialog(params, panel)
+  
+def openAsLayer(params):
+  i18n = ToolsLocator.getI18nManager()
+  view = gvsig.currentView()
+  if view == None:
+    msgbox(i18n.getTranslation("_Need_an_active_view"))
+    return
+  try:
+    params.validate()
+  except ValidateDataParametersException, ex:
+    msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+    return
+  try:
+    factory = getProviderFactoryFromParams(params)
+    if ( factory!=None and 
+      factory.hasTabularSupport()==DataStoreProviderFactory.YES and 
+      factory.hasVectorialSupport()!=DataStoreProviderFactory.YES and
+      factory.hasRasterSupport()!=DataStoreProviderFactory.YES ):
+      # No es una layer... lo abrimos como tabla.
+      openAsTable(params)
+      return
+    mapContextManager = MapContextLocator.getMapContextManager()
+    dataManager = DALLocator.getDataManager()
+    store = dataManager.openStore(params.getDataStoreName(), params)
+    if store.getDefaultFeatureType().getDefaultGeometryAttribute()==None:
+      msgbox(i18n.getTranslation("_The_table_has_no_geographic_information"))
+      return
+    layer = mapContextManager.createLayer(store.getName(), store)
+    view.getMapContext().getLayers().addLayer(layer)
+    DisposeUtils.disposeQuietly(store)
+  except:
+    logger("Can't add layer from params (%r)" % params, LOGGER_WARN, sys.exc_info()[1])
+  
+def openSearchDialog(params):
+  i18n = ToolsLocator.getI18nManager()
+  try:
+    params.validate()
+  except ValidateDataParametersException, ex:
+    msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+    return
+  swingManager = DALSwingLocator.getSwingManager()
+  winmgr = ToolsSwingLocator.getWindowManager()
+  store = getDataManager().openStore(params.getDataStoreName(), params)
+  panel = swingManager.createFeatureStoreSearchPanel(store)
+  winmgr.showWindow(
+          panel.asJComponent(), 
+          i18n.getTranslation("_Search")+ ": " + store.getName(), 
+          WindowManager.MODE.WINDOW
+  )
+
+def addToBookmarks(root, params, name):
+  i18n = ToolsLocator.getI18nManager()
+  bookmarks = root.getBookmarks()
+  try:
+    params.validate()
+  except ValidateDataParametersException, ex:
+    msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recuse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values"+"\n\n"+ex.getLocalizedMessageStack()))
+    return
+  bookmarks.addParamsToBookmarks(name,params)
 
 
 def main(*args):

@@ -16,6 +16,7 @@ from javax.swing import JMenuItem
 from addons.Catalog.catalogutils import CatalogSimpleNode, CatalogNode, getIconFromFile
 from addons.Catalog.catalogutils import createJMenuItem, getDataManager, getProviderFactoryFromFile
 from addons.Catalog.catalogutils import getDataFolder
+from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks
 
 from  addons.Catalog.cataloglocator import getCatalogManager
 
@@ -256,68 +257,19 @@ class FileNode(CatalogSimpleNode):
     thread.start_new_thread(launchAbeille,(folder,))
     
   def openAsForm(self, *args):
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    swingManager = DALSwingLocator.getSwingManager()
-    form = swingManager.createJFeaturesForm(store)
-    form.showForm(WindowManager.MODE.WINDOW)
+    openAsForm(self.getParams())
 
   def openSearchDialog(self, *args):
-    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    swingManager = DALSwingLocator.getSwingManager()
-    winmgr = ToolsSwingLocator.getWindowManager()
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    panel = swingManager.createFeatureStoreSearchPanel(store)
-    winmgr.showWindow(
-            panel.asJComponent(), 
-            i18n.getTranslation("Search: ") + store.getName(), 
-            WindowManager.MODE.WINDOW
-    )
+    openSearchDialog(self.getParams())
     
   def addToBookmarks(self, event=None):
-    i18n = ToolsLocator.getI18nManager()
-    bookmarks = self.getRoot().getBookmarks()
-    name = os.path.basename(self.__path)
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recurse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    bookmarks.addParamsToBookmarks(name,self.getParams())
+    addToBookmarks(self.getRoot(), self.getParams(), os.path.basename(self.__path))
     
   def mnuEditParameters(self, event=None):
-    manager = DALSwingLocator.getDataStoreParametersPanelManager()
-    panel = manager.createDataStoreParametersPanel(self.getParams())
-    manager.showPropertiesDialog(self.getParams(), panel)
+    openAsParameters(self.getParams())
 
   def openAsTable(self, event=None):
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    factory = getProviderFactoryFromFile(self.__path)
-    if factory==None or factory.hasTabularSupport()!=DataStoreProviderFactory.YES:
-      return
-    store = getDataManager().openStore(factory.getName(), self.getParams())
-    projectManager = ApplicationLocator.getManager().getProjectManager()
-    tableDoc = projectManager.createDocument(TableManager.TYPENAME)
-    tableDoc.setStore(store)
-    tableDoc.setName(str(self))
-    projectManager.getCurrentProject().addDocument(tableDoc)
-    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+    openAsTable(self.getParams())
   
   def actionPerformed(self, event=None):
     if self.getIcon()==None:

@@ -17,6 +17,7 @@ from org.gvsig.tools import ToolsLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
+from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks
 
 from org.gvsig.fmap.dal.exception import ValidateDataParametersException
 
@@ -172,47 +173,6 @@ class Table(CatalogSimpleNode):
         menu.add(JMenuItem(action))
     return menu    
 
-  def openAsForm(self, *args):
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    swingManager = DALSwingLocator.getSwingManager()
-    form = swingManager.createJFeaturesForm(store)
-    form.showForm(WindowManager.MODE.WINDOW)
-
-  def openSearchDialog(self, *args):
-    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    swingManager = DALSwingLocator.getSwingManager()
-    winmgr = ToolsSwingLocator.getWindowManager()
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    panel = swingManager.createFeatureStoreSearchPanel(store)
-    winmgr.showWindow(
-            panel.asJComponent(), 
-            i18n.getTranslation("Search: ") + store.getName(), 
-            WindowManager.MODE.WINDOW
-    )
- 
-  def addToBookmarks(self, event=None):
-    i18n = ToolsLocator.getI18nManager()
-    bookmarks = self.getRoot().getBookmarks()
-    name = self.__params.getTable()
-    try:
-      self.__params.validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_add_the_recuse_to_the_markers_Try_to_edit_the_parameters_first_and_fill_in_the_required_values"+"\n\n"+ex.getLocalizedMessageStack()))
-      return
-    bookmarks.addParamsToBookmarks(name,self.__params)
-
   def removeTable(self, event=None):
     i18n = ToolsLocator.getI18nManager()
     prompt = i18n.getTranslation("_Are_you_sure_to_remove_table_{0}_from_the_database_{1}", (str(self),str(self.getParent())) )
@@ -221,35 +181,24 @@ class Table(CatalogSimpleNode):
       dbExplorer.remove(self.__params)
       self.getParent().update()
       
-  def openAsTable(self, event=None):
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    store = getDataManager().openStore(self.__params.getDataStoreName(), self.__params)
-    projectManager = ApplicationLocator.getManager().getProjectManager()
-    tableDoc = projectManager.createDocument(TableManager.TYPENAME)
-    tableDoc.setStore(store)
-    tableDoc.setName(str(self))
-    projectManager.getCurrentProject().addDocument(tableDoc)
-    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+  def openAsForm(self, *args):
+    openAsForm(self.getParams())
+
+  def openSearchDialog(self, *args):
+    #menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
+    openSearchDialog(self.getParams())
+    
+  def addToBookmarks(self, event=None):
+    addToBookmarks(self.getRoot(), self.getParams(), self.getParams().getTable())
+
+  def actionPerformed(self, event):
+    openAsTable(self.getParams())
   
   def editParameters(self, event):
-    manager = DALSwingLocator.getDataStoreParametersPanelManager()
-    panel = manager.createDataStoreParametersPanel(self.__params)
-    manager.showPropertiesDialog(self.__params, panel)
+    openAsParameters(self.getParams())
   
-  def actionPerformed(self, event):
-    i18n = ToolsLocator.getI18nManager()
-    try:
-      self.getParams().validate()
-    except ValidateDataParametersException, ex:
-      msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
-      return
-    layer = MapContextLocator.getMapContextManager().createLayer(self.__params.getTable(), self.__params)
-    gvsig.currentView().getMainWindow().getMapControl().addLayer(layer)
+  def addToView(self, event):
+    openAsLayer(self.getParams())
     
 def main(*args):
     pass
