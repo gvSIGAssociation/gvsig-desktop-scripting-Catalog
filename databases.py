@@ -112,7 +112,7 @@ class Database(CatalogNode):
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
     menu.add(JSeparator())
-    menu.add(createJMenuItem(i18n.getTranslation("_Remove_database"),self.removeDatabase))
+    menu.add(createJMenuItem(i18n.getTranslation("_Remove_database_connection"),self.removeDatabase))
     return menu    
 
   def copyURL(self, event=None):
@@ -125,7 +125,7 @@ class Database(CatalogNode):
   def removeDatabase(self, event=None):
     #print "RemoveFromBookmarks ", self
     i18n = ToolsLocator.getI18nManager()
-    prompt = i18n.getTranslation("_Are_you_sure_to_remove_{0}", (str(self),))
+    prompt = i18n.getTranslation("_Are_you_sure_to_remove_the_connection_{0}", (str(self),))
     if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION)==YES:
       dataManager = getDataManager()
       pool = dataManager.getDataServerExplorerPool()
@@ -176,6 +176,7 @@ class Table(CatalogSimpleNode):
   def removeTable(self, event=None):
     i18n = ToolsLocator.getI18nManager()
     prompt = i18n.getTranslation("_Are_you_sure_to_remove_table_{0}_from_the_database_{1}", (str(self),str(self.getParent())) )
+    prompt += "\n\n" + i18n.getTranslation("_This_operation_will_delete_the_table_and_all_its_data")
     if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION)==YES:
       dbExplorer = self.getParent().getServerExplorer()
       dbExplorer.remove(self.__params)
@@ -191,13 +192,13 @@ class Table(CatalogSimpleNode):
   def addToBookmarks(self, event=None):
     addToBookmarks(self.getRoot(), self.getParams(), self.getParams().getTable())
 
-  def actionPerformed(self, event):
+  def openAsTable(self, event):
     openAsTable(self.getParams())
   
   def editParameters(self, event):
     openAsParameters(self.getParams())
   
-  def addToView(self, event):
+  def actionPerformed(self, event):
     openAsLayer(self.getParams())
     
 def main(*args):
