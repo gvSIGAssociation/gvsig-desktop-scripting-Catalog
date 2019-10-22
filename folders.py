@@ -222,11 +222,11 @@ class FileNode(CatalogSimpleNode):
     if factory!=None : 
       if (factory.hasVectorialSupport()!=DataStoreProviderFactory.NO or
         factory.hasRasterSupport()!=DataStoreProviderFactory.NO ):
-        menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed))
+        menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.actionPerformed, "view-layer-add"))
       if factory.hasTabularSupport()==DataStoreProviderFactory.YES:
-        menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable))
-        menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm))
-    menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog))
+        menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.openAsTable, "layer-show-attributes-table"))
+        menu.add(createJMenuItem(i18n.getTranslation("_Open_as_form"),self.openAsForm, "layer-show-form"))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_search_dialog"),self.openSearchDialog, "search-by-attributes-layer"))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_bookmarks"),self.addToBookmarks))
     menu.add(JSeparator())
