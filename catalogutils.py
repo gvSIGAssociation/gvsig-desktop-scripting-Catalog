@@ -2,6 +2,8 @@
 
 import gvsig
 
+import ConfigParser
+
 import sys
 
 from gvsig import getResource
@@ -54,6 +56,19 @@ dataManager = None
 
 def getDataFolder():
   return ScriptingLocator.getManager().getDataFolder("Catalog").getAbsolutePath()
+
+def getConfig():
+  fname = os.path.join(getDataFolder(), "catalog.ini")
+  config = ConfigParser.ConfigParser()
+  if os.path.exists(fname):
+    config.read(fname)
+  return config
+
+def saveConfig(config):
+  fname = os.path.join(getDataFolder(), "catalog.ini")
+  f = open(fname,"w")
+  config.write(f)
+  f.close()
 
 def getDataManager():
   global dataManager
@@ -396,4 +411,4 @@ def addToBookmarks(root, params, name):
 
 
 def main(*args):
-    pass
+  pass

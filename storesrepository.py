@@ -1,6 +1,9 @@
 # encoding: utf-8
 
 import gvsig
+
+from fnmatch import fnmatch
+
 from gvsig import getResource
 from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNING, YES, YES_NO
 
@@ -15,6 +18,7 @@ from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools import ToolsLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 
+from addons.Catalog import catalogutils
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
 
 from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks
@@ -89,12 +93,23 @@ class SubstoresRepository(CatalogNode):
     #print "### SubstoresRepository.__load"
     self._children = list()
     try :
+      config = catalogutils.getConfig()
+      sectionName = "StoreRepository_" + self.subrepo.getID()
+      hidde_pattern = None
+      if config.has_section(sectionName):
+        if config.has_option(sectionName, "hidde_pattern"):
+          hidde_pattern = config.get(sectionName, "hidde_pattern")
+          if hidde_pattern.strip() == "":
+            hidde_pattern = None
+        
       names0 = self.subrepo.keySet()
       if names0 != None:
         names = list()
         names.extend(names0)
         names.sort()
         for name in names:
+          if hidde_pattern!=None and fnmatch(name, hidde_pattern):
+            continue
           params = self.subrepo.get(name)
           self._children.append(Table(self, name, params))
     except Throwable:
@@ -108,11 +123,34 @@ class SubstoresRepository(CatalogNode):
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
     menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Hidde_entries"),self.getPatternToHiddeEntries))
     return menu    
 
+  def getPatternToHiddeEntries(self, *args):
+    i18n = ToolsLocator.getI18nManager()
+    config = catalogutils.getConfig()
+    sectionName = "StoreRepository_" + self.subrepo.getID()
+    hidde_pattern = ""
+    if config.has_section(sectionName):
+      if config.has_option(sectionName, "hidde_pattern"):
+        hidde_pattern = config.get(sectionName, "hidde_pattern")
+    s = inputbox(
+      i18n.getTranslation("_Enter_the_pattern_you_will_use_to_hide_the_entries_you_want_you_can_use_arterisks_and_questions"), 
+      i18n.getTranslation("_Pattern_to_hide_entries"), 
+      initialValue=hidde_pattern
+    )
+    if s==None:
+      return # User cancel
+    if not config.has_section(sectionName):
+      config.add_section(sectionName)
+    config.set(sectionName,"hidde_pattern",s.strip())
+    catalogutils.saveConfig(config)
+    self.update()
+    
   def addResource(self, *args):
     msgbox("Add rsources to database not yet implemented")
-    
+
   def getResource(self, *args):
     msgbox("Get rsources to database not yet implemented")
     
