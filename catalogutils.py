@@ -127,7 +127,7 @@ def getProviderFactoryFromParams(params):
   factory = getDataManager().getStoreProviderFactory(providerName)
   return factory
   
-def createJMenuItem(label, function, iconName=None):
+def createJMenuItem(label, function, iconName=None, enabled=True):
   icon = None
   if iconName!=None:
     iconTheme = ToolsSwingLocator.getIconThemeManager().getCurrent()
@@ -138,6 +138,7 @@ def createJMenuItem(label, function, iconName=None):
   else:
     item = JMenuItem(label)
   item.addActionListener(ActionListenerAdapter(function))
+  item.setEnabled(enabled)
   return item
 
 class CatalogSimpleNode(TreeNode, ActionListener):

@@ -118,8 +118,13 @@ class SubstoresRepository(CatalogNode):
   
   def createPopup(self):
     i18n = ToolsLocator.getI18nManager()
+    dataManager = getDataManager()
+    repoID = self.subrepo.getID()
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
+    menu.add(JSeparator())
+    enableDisconnet = dataManager.getDatabaseWorkspace(repoID)!=None
+    menu.add(createJMenuItem(i18n.getTranslation("_Disconnect_from_database_workspace"),self.disconnectWorkspace, enabled=enableDisconnet))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
     menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
@@ -127,6 +132,13 @@ class SubstoresRepository(CatalogNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Hidde_entries"),self.getPatternToHiddeEntries))
     return menu    
 
+  def disconnectWorkspace(self, *args):
+    dataManager = getDataManager()
+    repoID = self.subrepo.getID()
+    workspace = dataManager.getDatabaseWorkspace(repoID)
+    if workspace!=None:
+      workspace.disconnect()
+    
   def getPatternToHiddeEntries(self, *args):
     i18n = ToolsLocator.getI18nManager()
     config = catalogutils.getConfig()

@@ -1,5 +1,5 @@
 #
-#Tue Oct 22 11:43:22 CEST 2019
+#Tue Jan 28 11:01:04 CET 2020
 owner=gvSIG association
 code=Catalog
 java-version=j1_7
@@ -14,7 +14,7 @@ owner-url=http\://www.gvsig.com/
 dependencies=
 sources-url=http\://github.com/gvSIGAssociation/gvsig-desktop-scripting-Catalog
 name=Catalog
-gvSIG-version=2.5.0
+gvSIG-version=2.5.1
 state=testing
 categories=View
 model-version=1.0.1
