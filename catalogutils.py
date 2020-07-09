@@ -8,6 +8,8 @@ import sys
 
 from gvsig import getResource
 from gvsig.libs.formpanel import ActionListenerAdapter
+from gvsig.uselib import use_plugin
+use_plugin("org.gvsig.tools")
 
 from java.io import File
 from java.awt.event import ActionListener
@@ -26,6 +28,7 @@ from javax.swing.tree import DefaultTreeModel
 from javax.swing.tree import TreePath
 from javax.swing import JOptionPane 
 
+
 import os
 
 from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNING, YES, YES_NO
@@ -42,8 +45,9 @@ from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.fmap.dal import DataStoreProviderFactory
-from org.gvsig.tools.ToolsLocator import DisposeUtils
 
+from org.gvsig.tools import ToolsLocator 
+from org.gvsig.tools.dispose import DisposeUtils
 from gvsig import logger
 from gvsig import LOGGER_WARN
 
