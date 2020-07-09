@@ -45,8 +45,6 @@ from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.fmap.dal import DataStoreProviderFactory
-
-from org.gvsig.tools import ToolsLocator 
 from org.gvsig.tools.dispose import DisposeUtils
 from gvsig import logger
 from gvsig import LOGGER_WARN
