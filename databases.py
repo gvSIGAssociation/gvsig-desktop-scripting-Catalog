@@ -14,6 +14,7 @@ from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools import ToolsLocator
+from org.gvsig.tools.dispose import DisposeUtils
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
@@ -93,6 +94,7 @@ class Database(CatalogNode):
   def __load(self):
     #print "### Database.__load"
     self._children = list()
+    dbExplorer = None
     try :
       dbExplorer = self.getServerExplorer()
       tablesParams = list()
@@ -102,6 +104,8 @@ class Database(CatalogNode):
         self._children.append(Table(self, tableParams))
     except Throwable:
       pass
+    finally:
+      DisposeUtils.disposeQuietly(dbExplorer)
     SwingUtilities.invokeLater(self.reload)
   
   def createPopup(self):
@@ -181,6 +185,7 @@ class Table(CatalogSimpleNode):
       dbExplorer = self.getParent().getServerExplorer()
       dbExplorer.remove(self.__params)
       self.getParent().update()
+      DisposeUtils.disposeQuietly(dbExplorer)
       
   def openAsForm(self, *args):
     openAsForm(self.getParams())
