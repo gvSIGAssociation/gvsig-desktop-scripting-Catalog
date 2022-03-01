@@ -27,7 +27,7 @@ from javax.swing.tree import DefaultTreeCellRenderer
 from javax.swing.tree import DefaultTreeModel
 from javax.swing.tree import TreePath
 from javax.swing import JOptionPane 
-
+from java.util.function import Predicate
 
 import os
 
@@ -327,8 +327,7 @@ def openAsTable(params):
     projectManager = ApplicationLocator.getManager().getProjectManager()
     project = projectManager.getCurrentProject()
 
-    tableDoc = project.getDocument(store.getName(),TableManager.TYPENAME)
-      
+    tableDoc = project.getDocument(FilterDocumentByStore(store))
     if tableDoc == None:
       tableDoc = projectManager.createDocument(TableManager.TYPENAME)
       tableDoc.setStore(store)
@@ -336,7 +335,7 @@ def openAsTable(params):
       project.addDocument(tableDoc)
       
     ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
-
+    
 def openAsForm(params):
   i18n = ToolsLocator.getI18nManager()
   try:
@@ -413,6 +412,14 @@ def addToBookmarks(root, params, name):
     return
   bookmarks.addParamsToBookmarks(name,params)
 
+class FilterDocumentByStore(Predicate):
+  def __init__(self, store):
+    self.storeFullName = store.getFullName()
+
+  def test(self, doc):
+    if doc.getTypeName()!=TableManager.TYPENAME:
+      return False
+    return doc.getFeatureStore().getFullName() == self.storeFullName
 
 def main(*args):
   pass
