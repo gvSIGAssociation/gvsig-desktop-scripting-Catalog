@@ -124,6 +124,8 @@ class Database(CatalogNode):
     url = self.__params.getDynValue("URL")
     if url.startswith("jdbc:h2:file:"):
       url = url.replace("jdbc:h2:file:","jdbc:h2:tcp://localhost:9123/")
+    if url.startswith("jdbc:h2:split:"):
+      url = url.replace("jdbc:h2:split:","jdbc:h2:tcp://localhost:9123/split:")
     application.putInClipboard(url)
     
   def removeDatabase(self, event=None):
