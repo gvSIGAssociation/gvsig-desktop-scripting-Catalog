@@ -2,13 +2,14 @@
 
 import gvsig
 from gvsig import getResource
-from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNING, YES, YES_NO
+from gvsig.commonsdialog import inputbox, msgbox,  QUESTION, WARNING, YES, YES_NO
 
 from java.lang import Throwable
 from javax.swing import JPopupMenu
 from javax.swing import JSeparator
 from javax.swing import JMenuItem
 
+from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.fmap.dal.store.jdbc import JDBCServerExplorerParameters
 from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal.swing import DALSwingLocator
@@ -28,6 +29,12 @@ from org.gvsig.app.project.documents.table import TableManager
 from javax.swing import SwingUtilities
 
 from  addons.Catalog.cataloglocator import getCatalogManager
+
+
+def confirmDialog(prompt, title, optionType, messageType, msgid=None):
+  manager = ToolsSwingLocator.getThreadSafeDialogsManager()
+  n = manager.confirmDialog(prompt, title, optionType, messageType, msgid)
+  return n
 
 class Databases(CatalogNode):
   def __init__(self, parent):
@@ -132,7 +139,7 @@ class Database(CatalogNode):
     #print "RemoveFromBookmarks ", self
     i18n = ToolsLocator.getI18nManager()
     prompt = i18n.getTranslation("_Are_you_sure_to_remove_the_connection_{0}", (str(self),))
-    if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION)==YES:
+    if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION, "_RemoveDatabaseConnectionFromCatalog")==YES:
       dataManager = getDataManager()
       pool = dataManager.getDataServerExplorerPool()
       pool.remove(str(self))
