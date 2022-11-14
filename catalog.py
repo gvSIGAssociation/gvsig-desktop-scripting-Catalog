@@ -5,6 +5,8 @@ from gvsig import currentView
 from gvsig import getResource
 from gvsig.libs.formpanel import MouseListenerAdapter
 
+import sys
+
 from java.io import File
 from java.awt.event import MouseEvent
 from javax.imageio import ImageIO
@@ -17,31 +19,22 @@ from org.gvsig.fmap.dal import DALLocator
 from org.gvsig.tools import ToolsLocator
 
 import addons.Catalog.catalogutils
-reload(addons.Catalog.catalogutils)
-import addons.Catalog.folders
-reload(addons.Catalog.folders)
-import addons.Catalog.bookmarks
-reload(addons.Catalog.bookmarks)
-import addons.Catalog.databases
-reload(addons.Catalog.databases)
-import addons.Catalog.storesrepository
-reload(addons.Catalog.storesrepository)
 
-from addons.Catalog.catalogutils import CatalogNode
-from addons.Catalog.folders import Folders
-from addons.Catalog.bookmarks import Bookmarks, BookmarkFolder
-from addons.Catalog.databases import Databases
-from addons.Catalog.storesrepository import StoresRepository
+from addons.Catalog.catalogutils import CatalogRoot
+from addons.Catalog.cataloglocator import getCatalogManager
 
-class Catalog(CatalogNode):
+class Catalog(CatalogRoot):
   def __init__(self, tree):
-    CatalogNode.__init__(self,None, icon=getResource(__file__,"images","Catalog.png"))    
-    self.__tree = tree
-    self.add(Bookmarks(self))
-    self.add(Folders(self))
-    self.add(Databases(self))
-    self.add(StoresRepository(self))
-
+    CatalogRoot.__init__(self,tree)    
+    catalogManager = getCatalogManager()
+    for node in catalogManager.getCatalogNodes():
+      try:
+        #print "Catalog, add node " + repr(node)
+        self.add(node(self))
+      except:
+        ex = sys.exc_info()[1]
+        gvsig.logger("Can't add node '"+repr(node)+"'. " + str(ex), gvsig.LOGGER_WARN, ex)
+           
   def getBookmarks(self):
     return self.getChildAt(0)
     
@@ -50,20 +43,7 @@ class Catalog(CatalogNode):
     
   def getDatabases(self):
     return self.getChildAt(2)
-    
-  def toString(self):
-    i18n = ToolsLocator.getI18nManager()
-    return i18n.getTranslation("_Data_sources")
-
-  def getTreePath(self):
-    return [ self ]
-    
-  def getRoot(self):
-    return self
-        
-  def getTree(self):
-    return self.__tree
-    
+   
 class CatalogCellRenderer(DefaultTreeCellRenderer):
   def __init__(self, icon_folder, icon_doc):
     self._icon_folder = icon_folder
@@ -93,13 +73,14 @@ class JCatalogTree(JTree):
     self.addMouseListener(MouseListenerAdapter(self.mouseClicked))
 
   def addCurrentLayerToBookmarks(self):
-   currentNode = None
-   treePath = self.getSelectionPath()
-   if treePath != None:
+    from addons.Catalog.bookmarks import BookmarkFolder
+    currentNode = None
+    treePath = self.getSelectionPath()
+    if treePath != None:
      currentNode = treePath.getLastPathComponent()
-   if not isinstance(currentNode,BookmarkFolder):
+    if not isinstance(currentNode,BookmarkFolder):
      currentNode = self.__catalog.getChildAt(0)
-   currentNode.mnuAddCurrentLayerToBookmarks()
+    currentNode.mnuAddCurrentLayerToBookmarks()
    
   def mouseClicked(self, event):
     if event.isPopupTrigger():
@@ -119,13 +100,7 @@ class JCatalogTree(JTree):
     
     
 def main(*args):
-  i18n = ToolsLocator.getI18nManager()
-  currentView().getWindowOfView().getViewInformationArea().add(
-    JScrollPane(JCatalogTree()), 
-    "Catalog", 
-    100, 
-    i18n.getTranslation("_Catalog"), 
-    None, 
-    None
-  )
-  
+  catalogManager = getCatalogManager()
+  catalogManager.addCatalogToView(currentView())
+  #catalog  = Catalog(JTree())
+ 

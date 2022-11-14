@@ -2,41 +2,18 @@
 
 import gvsig
 
-from addons.Catalog.catalog import JCatalogTree
 from gvsig import currentView
 from gvsig import getResource
 from java.io import File
 from javax.swing import JScrollPane
 from org.gvsig.andami import PluginsLocator
 from org.gvsig.app import ApplicationLocator
-from org.gvsig.app.project.documents import DocumentManager
 from org.gvsig.app.project.documents.view import ViewManager
 from org.gvsig.scripting.app.extension import ScriptingExtension
 from org.gvsig.tools import ToolsLocator
-from org.gvsig.tools.observer import Observer
 from org.gvsig.tools.swing.api import ToolsSwingLocator
 
-class AddCatalogToViewObserver(Observer):
-  def __init__(self):
-    pass
-
-  def update(self, viewpanel, notification):
-    if notification.getValue()==None :
-      return
-    if notification.getType() != DocumentManager.NOTIFY_AFTER_CREATEMAINWINDOW :
-      return
-    #
-    # Cada vez que se crea un panel de vista nuevo, le añadimos el catalogo.
-    i18n = ToolsLocator.getI18nManager()
-    viewpanel = notification.getValue()
-    viewpanel.getViewInformationArea().add(
-      JScrollPane(JCatalogTree()), 
-      "Catalog", 
-      100, 
-      i18n.getTranslation("_Catalog"), 
-      None, 
-      None
-    )      
+from addons.Catalog.cataloglocator import getCatalogManager
 
 class DatasourceCatalogExtension(ScriptingExtension):
   def __init__(self):
@@ -61,12 +38,8 @@ class DatasourceCatalogExtension(ScriptingExtension):
     return True
     
   def getCatalogTree(self):
-    viewInformationArea = currentView().getWindowOfView().getViewInformationArea()
-    jsp = viewInformationArea.get("Catalog")
-    if jsp == None:
-      return None
-    catalogTree = jsp.asJComponent().getViewport().getView()
-    return catalogTree
+    catalogManager = getCatalogManager()
+    return catalogManager.getCatalogTree(currentView())
     
   def execute(self,actionCommand, *args):
     actionCommand = actionCommand.lower()
@@ -104,41 +77,8 @@ def selfRegister():
   projectManager = ApplicationLocator.getProjectManager()  
   viewManager = projectManager.getDocumentManager(ViewManager.TYPENAME)
   viewManager.addTOCContextAction("tools-catalog-addLayerToCatalog")
-
-  #
-  # Añadimos el observer al ViewManager para añadir el catalogo a la Vista
-  # cuando se cree el panel de la vista.
-  projectManager = ApplicationLocator.getProjectManager()
-  viewManager = projectManager.getDocumentManager(ViewManager.TYPENAME)
-  addCatalogToViewObserver = AddCatalogToViewObserver()
-  viewManager.setProperty("AddCatalogObserver",addCatalogToViewObserver)
-  viewManager.addObserver(addCatalogToViewObserver)
-
-  #
-  # Si ya hay una vista abierta le mete el catalogo
-  view = currentView()
-  if view != None:
-    viewPanel = view.getWindowOfView()
-    viewInformationArea = viewPanel.getViewInformationArea()
-    if viewInformationArea.get("Catalog")==None:
-      viewInformationArea.add(
-        JScrollPane(JCatalogTree()), 
-        "Catalog", 
-        100, 
-        i18n.getTranslation("_Catalog"), 
-        None, 
-        None
-      )      
-  
-def test():
-    viewInformationArea = currentView().getWindowOfView().getViewInformationArea()
-    jsp = viewInformationArea.get("Catalog")
-    if jsp == None:
-      return
-    catalogTree = jsp.asJComponent().getViewport().getView()
-    print catalogTree.__class__.__name__
-    
+   
 def main(*args):
   #selfRegister()
-  test()    
+  pass
   

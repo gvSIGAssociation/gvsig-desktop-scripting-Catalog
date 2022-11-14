@@ -59,9 +59,14 @@ class StoresRepository(CatalogNode):
     self._children = list()
     dataManager = getDataManager()
     repo = dataManager.getStoresRepository()
-    for subrepo in repo.getSubrepositories():
-      self._children.append(SubstoresRepository(self, subrepo.getLabel(), subrepo))
-    self.reload()
+    for n in xrange(1,5):
+      try:
+        for subrepo in repo.getSubrepositories():
+          self._children.append(SubstoresRepository(self, subrepo.getLabel(), subrepo))
+        break
+      except:
+        pass
+    SwingUtilities.invokeLater(self.reload)
     
   def toString(self):
     i18n = ToolsLocator.getI18nManager()
@@ -92,28 +97,30 @@ class SubstoresRepository(CatalogNode):
   def __load(self):
     #print "### SubstoresRepository.__load"
     self._children = list()
-    try :
-      config = catalogutils.getConfig()
-      sectionName = "StoreRepository_" + self.subrepo.getID()
-      hidde_pattern = None
-      if config.has_section(sectionName):
-        if config.has_option(sectionName, "hidde_pattern"):
-          hidde_pattern = config.get(sectionName, "hidde_pattern")
-          if hidde_pattern.strip() == "":
-            hidde_pattern = None
-        
-      names0 = self.subrepo.keySet()
-      if names0 != None:
-        names = list()
-        names.extend(names0)
-        names.sort()
-        for name in names:
-          if hidde_pattern!=None and fnmatch(name, hidde_pattern):
-            continue
-          params = self.subrepo.get(name)
-          self._children.append(Table(self, name, params))
-    except Throwable:
-      pass
+    for i in xrange(1,5):
+      try :
+        config = catalogutils.getConfig()
+        sectionName = "StoreRepository_" + self.subrepo.getID()
+        hidde_pattern = None
+        if config.has_section(sectionName):
+          if config.has_option(sectionName, "hidde_pattern"):
+            hidde_pattern = config.get(sectionName, "hidde_pattern")
+            if hidde_pattern.strip() == "":
+              hidde_pattern = None
+          
+        names0 = self.subrepo.keySet()
+        if names0 != None:
+          names = list()
+          names.extend(names0)
+          names.sort()
+          for name in names:
+            if hidde_pattern!=None and fnmatch(name, hidde_pattern):
+              continue
+            params = self.subrepo.get(name)
+            self._children.append(Table(self, name, params))
+        break
+      except Throwable:
+        pass
     SwingUtilities.invokeLater(self.reload)
   
   def createPopup(self):

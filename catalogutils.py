@@ -8,8 +8,8 @@ import sys
 
 from gvsig import getResource
 from gvsig.libs.formpanel import ActionListenerAdapter
-from gvsig.uselib import use_plugin
-use_plugin("org.gvsig.tools")
+#from gvsig.uselib import use_plugin
+#use_plugin("org.gvsig.tools")
 
 from java.io import File
 from java.awt.event import ActionListener
@@ -296,8 +296,26 @@ class CatalogNode(CatalogSimpleNode):
     #print "### CatalogNode.__delslice__", i, j
     del self._getChildren()[i:j]
 
+class CatalogRoot(CatalogNode):
+  def __init__(self, tree):
+    CatalogNode.__init__(self,None, icon=getResource(__file__,"images","Catalog.png"))    
+    self.__tree = tree
+   
+  def toString(self):
+    i18n = ToolsLocator.getI18nManager()
+    return i18n.getTranslation("_Data_sources")
 
-def openAsTable(params):
+  def getTreePath(self):
+    return [ self ]
+    
+  def getRoot(self):
+    return self
+        
+  def getTree(self):
+    return self.__tree
+
+
+def openAsTable(params, name=None):
     i18n = ToolsLocator.getI18nManager()
     try:
       params.validate()
@@ -331,8 +349,11 @@ def openAsTable(params):
     if tableDoc == None:
       tableDoc = projectManager.createDocument(TableManager.TYPENAME)
       tableDoc.setStore(store)
-      tableDoc.setName(store.getName())
-      project.addDocument(tableDoc)
+      if name == None:
+        tableDoc.setName(store.getName())
+      else:
+         tableDoc.setName(name)
+    project.addDocument(tableDoc)
       
     ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
     
@@ -353,7 +374,7 @@ def openAsParameters(params):
   panel = manager.createDataStoreParametersPanel(params)
   manager.showPropertiesDialog(params, panel)
   
-def openAsLayer(params):
+def openAsLayer(params, name=None):
   i18n = ToolsLocator.getI18nManager()
   view = gvsig.currentView()
   if view == None:
@@ -371,7 +392,7 @@ def openAsLayer(params):
       factory.hasVectorialSupport()!=DataStoreProviderFactory.YES and
       factory.hasRasterSupport()!=DataStoreProviderFactory.YES ):
       # No es una layer... lo abrimos como tabla.
-      openAsTable(params)
+      openAsTable(params,name)
       return
     mapContextManager = MapContextLocator.getMapContextManager()
     dataManager = DALLocator.getDataManager()
@@ -379,7 +400,9 @@ def openAsLayer(params):
     if store.getDefaultFeatureType().getDefaultGeometryAttribute()==None:
       msgbox(i18n.getTranslation("_The_table_has_no_geographic_information"))
       return
-    layer = mapContextManager.createLayer(store.getName(), store)
+    if name == None:
+      name = store.getName()
+    layer = mapContextManager.createLayer(name, store)
     view.getMapContext().getLayers().addLayer(layer)
     DisposeUtils.disposeQuietly(store)
   except:

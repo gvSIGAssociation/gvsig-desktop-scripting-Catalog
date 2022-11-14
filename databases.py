@@ -18,7 +18,7 @@ from org.gvsig.tools import ToolsLocator
 from org.gvsig.tools.dispose import DisposeUtils
 from org.gvsig.tools.swing.api.windowmanager import WindowManager
 
-from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
+from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams, CatalogRoot
 from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks
 
 from org.gvsig.fmap.dal.exception import ValidateDataParametersException
@@ -139,7 +139,7 @@ class Database(CatalogNode):
     #print "RemoveFromBookmarks ", self
     i18n = ToolsLocator.getI18nManager()
     prompt = i18n.getTranslation("_Are_you_sure_to_remove_the_connection_{0}", (str(self),))
-    if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION, "_RemoveDatabaseConnectionFromCatalog")==YES:
+    if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION,"_RemoveDatabaseConnectionFromCatalog")==YES:
       dataManager = getDataManager()
       pool = dataManager.getDataServerExplorerPool()
       pool.remove(str(self))
@@ -216,4 +216,7 @@ class Table(CatalogSimpleNode):
     openAsLayer(self.getParams())
     
 def main(*args):
-    pass
+    from javax.swing import JTree
+
+    catalog  = CatalogRoot(JTree())
+    d = Databases(catalog)
