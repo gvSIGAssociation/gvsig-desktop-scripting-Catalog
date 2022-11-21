@@ -216,6 +216,28 @@ class CatalogSimpleNode(TreeNode, ActionListener):
     x = self.getParent().getTreePath()
     x.append(self)
     return x
+    
+  def expand(self, node=None):
+    #print "### CatalogNode.expand", node
+    if node == None:
+      node = self
+    treepath = TreePath(self.getTreePath())
+    self.getTree().expandPath(treepath)  
+      
+  def reload(self):
+    #print ">>> reload enter", self.__class__.__name__
+    root = self.getTree().getModel().getRoot()
+    expandeds = self.getTree().getExpandedDescendants(TreePath(root))
+    #print ">>> reload ", self.__class__.__name__, self.getTree().getModel().__class__.__name__
+    self.getTree().getModel().reload()
+    if expandeds != None:
+      for treePath in expandeds:
+        try:
+          self.getTree().expandPath(treePath)
+        except:
+          pass
+    #print ">>> reload exit", self.__class__.__name__
+
 
 class CatalogNode(CatalogSimpleNode):
   def __init__(self, parent, icon=None):
@@ -260,27 +282,6 @@ class CatalogNode(CatalogSimpleNode):
     # Returns true if the receiver is a leaf.
     #print "### CatalogNode.isLeaf"
     return False
-
-  def expand(self, node=None):
-    #print "### CatalogNode.expand", node
-    if node == None:
-      node = self
-    treepath = TreePath(self.getTreePath())
-    self.getTree().expandPath(treepath)  
-      
-  def reload(self):
-    #print ">>> reload enter", self.__class__.__name__
-    root = self.getTree().getModel().getRoot()
-    expandeds = self.getTree().getExpandedDescendants(TreePath(root))
-    #print ">>> reload ", self.__class__.__name__, self.getTree().getModel().__class__.__name__
-    self.getTree().getModel().reload()
-    if expandeds != None:
-      for treePath in expandeds:
-        try:
-          self.getTree().expandPath(treePath)
-        except:
-          pass
-    #print ">>> reload exit", self.__class__.__name__
 
   def add(self, element):
     #print "### CatalogNode.add", element
