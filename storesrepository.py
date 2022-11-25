@@ -2,6 +2,9 @@
 
 import gvsig
 
+from gvsig.uselib import use_plugin
+use_plugin("org.gvsig.geodb.app.mainplugin")
+
 from fnmatch import fnmatch
 
 from gvsig import getResource
@@ -16,7 +19,7 @@ from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.fmap.dal.swing import DALSwingLocator
 from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools import ToolsLocator
-from org.gvsig.tools.swing.api.windowmanager import WindowManager
+from org.gvsig.tools.swing.api.windowmanager import WindowManager, WindowManager_v2
 
 from addons.Catalog import catalogutils
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
@@ -29,10 +32,14 @@ from org.gvsig.app import ApplicationLocator
 from org.gvsig.app.project.documents.table import TableManager
 
 from javax.swing import SwingUtilities
+from org.gvsig.andami import PluginsLocator
 
 from  addons.Catalog.cataloglocator import getCatalogManager
+from  addons.Catalog.repository.createrepo import CreateRepository
 
 from org.gvsig.tools.observer import Observer
+from org.gvsig.geodb.databaseworkspace import RepositoryAddTablePanel
+from org.gvsig.fmap.dal.DatabaseWorkspaceManager import TABLE_REPOSITORY_NAME, TABLE_RESOURCES_NAME, TABLE_CONFIGURATION_NAME
 
 try:
   from addons.ScriptingComposerTools.abeille.abeille import launchAbeille
@@ -75,12 +82,21 @@ class StoresRepository(CatalogNode):
   def createPopup(self):
     i18n = ToolsLocator.getI18nManager()
     menu = JPopupMenu()
+    menu.add(createJMenuItem(i18n.getTranslation("Conectar a repositorio"),self.conectarARepositorio))
+    menu.add(createJMenuItem(i18n.getTranslation("Crear repositorio"),self.crearRepositorio))
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
     return menu    
 
   def update(self, event=None):
     SwingUtilities.invokeLater(self.__load)
     
+  def conectarARepositorio(self, event=None):
+    actionManager = PluginsLocator.getActionInfoManager()
+    action = actionManager.getAction("database-workspace-connect").execute()
+     
+  def crearRepositorio(self, event=None):
+      x = CreateRepository()
+      x.showWindow("Crear repositorio")
     
 class SubstoresRepository(CatalogNode):
   def __init__(self, parent, label, subrepo):
@@ -127,14 +143,16 @@ class SubstoresRepository(CatalogNode):
     i18n = ToolsLocator.getI18nManager()
     dataManager = getDataManager()
     repoID = self.subrepo.getID()
+    isdbrepo = dataManager.getDatabaseWorkspace(repoID)!=None
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Añadir tablas el repositorio"),self.addTablesToRepository, enabled=isdbrepo))
     menu.add(JSeparator())
-    enableDisconnet = dataManager.getDatabaseWorkspace(repoID)!=None
-    menu.add(createJMenuItem(i18n.getTranslation("_Disconnect_from_database_workspace"),self.disconnectWorkspace, enabled=enableDisconnet))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Desconectar el reposotorio"),self.disconnectWorkspace, enabled=isdbrepo))
     menu.add(JSeparator())
-    menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
-    menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Ver la tabla de recursos"),lambda e: self.__showTable(TABLE_RESOURCES_NAME), enabled=isdbrepo))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Ver la tabla de configuración"),lambda e: self.__showTable(TABLE_CONFIGURATION_NAME), enabled=isdbrepo))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Ver la tabla de contenidos"),lambda e: self.__showTable(TABLE_REPOSITORY_NAME), enabled=isdbrepo))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_Hidde_entries"),self.getPatternToHiddeEntries))
     return menu    
@@ -145,7 +163,36 @@ class SubstoresRepository(CatalogNode):
     workspace = dataManager.getDatabaseWorkspace(repoID)
     if workspace!=None:
       workspace.disconnect()
+
+  def __showTable(self, tablename):
+    dataManager = getDataManager()
+    workspace = dataManager.getDatabaseWorkspace(self.subrepo.getID())
+    serverExplorer = workspace.getServerExplorer()
+    params = serverExplorer.get(tablename)
+    openAsForm(params)
     
+  def addTablesToRepository(self, *args):
+    dataManager = getDataManager()
+    workspace = dataManager.getDatabaseWorkspace(self.subrepo.getID())
+    winManager = ToolsSwingLocator.getWindowManager()
+    panel = RepositoryAddTablePanel()
+    dialog = winManager.createDialog(
+                panel,
+                u"Añadir tablas al repositorio (%s)" %  self.subrepo.getID(),
+                None,
+                winManager.BUTTONS_OK_CANCEL
+    )
+    dialog.addActionListener(lambda e: self.__doAddTablesToRepository(workspace, dialog, panel))
+    dialog.show(winManager.MODE.WINDOW)
+
+  def __doAddTablesToRepository(self, workspace, dialog, panel):
+    if  dialog.getAction() == WindowManager_v2.BUTTON_OK:
+      for x in panel.getDataStoreParameters():
+        if x == None:
+          continue
+        if not workspace.writeStoresRepositoryEntry(x.getLabel(), x.getValue()):
+          msgbox(u"No se ha podido añadir al repositorio la tabla '%s'" % x.getLabel())
+ 
   def getPatternToHiddeEntries(self, *args):
     i18n = ToolsLocator.getI18nManager()
     config = catalogutils.getConfig()
@@ -166,13 +213,7 @@ class SubstoresRepository(CatalogNode):
     config.set(sectionName,"hidde_pattern",s.strip())
     catalogutils.saveConfig(config)
     self.update()
-    
-  def addResource(self, *args):
-    msgbox("Add rsources to database not yet implemented")
 
-  def getResource(self, *args):
-    msgbox("Get rsources to database not yet implemented")
-    
   def update(self, event=None):
     SwingUtilities.invokeLater(self.__load)
     
