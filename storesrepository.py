@@ -148,9 +148,9 @@ class SubstoresRepository(CatalogNode):
     isdbrepo = dataManager.getDatabaseWorkspace(repoID)!=None
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
-    menu.add(createJMenuItem(i18n.getTranslation(u"Añadir tablas el repositorio"),self.addTablesToRepository, enabled=isdbrepo))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Añadir tablas al repositorio"),self.addTablesToRepository, enabled=isdbrepo))
     menu.add(JSeparator())
-    menu.add(createJMenuItem(i18n.getTranslation(u"Desconectar el reposotorio"),self.disconnectWorkspace, enabled=isdbrepo))
+    menu.add(createJMenuItem(i18n.getTranslation(u"Desconectar del reposotorio"),self.disconnectWorkspace, enabled=isdbrepo))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation(u"Ver la tabla de recursos"),lambda e: self.__showTable(TABLE_RESOURCES_NAME), enabled=isdbrepo))
     menu.add(createJMenuItem(i18n.getTranslation(u"Ver la tabla de configuración"),lambda e: self.__showTable(TABLE_CONFIGURATION_NAME), enabled=isdbrepo))
