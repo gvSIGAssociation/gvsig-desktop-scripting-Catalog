@@ -123,7 +123,7 @@ class SubstoresRepository(CatalogNode):
             hidde_pattern = config.get(sectionName, "hidde_pattern")
             if hidde_pattern.strip() == "":
               hidde_pattern = None
-          
+              
         names0 = self.subrepo.keySet()
         if names0 != None:
           names = list()
@@ -133,9 +133,11 @@ class SubstoresRepository(CatalogNode):
             if hidde_pattern!=None and fnmatch(name, hidde_pattern):
               continue
             params = self.subrepo.get(name)
-            self._children.append(Table(self, name, params))
+            x = Table(self, name, params)
+            self._children.append(x)
         break
-      except Throwable:
+      except Throwable as e:
+        e.printStackTrace()
         pass
     SwingUtilities.invokeLater(self.reload)
   
@@ -169,7 +171,9 @@ class SubstoresRepository(CatalogNode):
     workspace = dataManager.getDatabaseWorkspace(self.subrepo.getID())
     serverExplorer = workspace.getServerExplorer()
     params = serverExplorer.get(tablename)
-    openAsForm(params)
+    #openAsTable(params)
+    #openAsForm(params)
+    openSearchDialog(params)
     
   def addTablesToRepository(self, *args):
     dataManager = getDataManager()
@@ -192,6 +196,8 @@ class SubstoresRepository(CatalogNode):
           continue
         if not workspace.writeStoresRepositoryEntry(x.getLabel(), x.getValue()):
           msgbox(u"No se ha podido añadir al repositorio la tabla '%s'" % x.getLabel())
+    workspace.connect() # Para forzar a recargar las tablas del repositorio.
+    SwingUtilities.invokeLater(self.reload)
  
   def getPatternToHiddeEntries(self, *args):
     i18n = ToolsLocator.getI18nManager()
@@ -244,9 +250,9 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_View_parameters"),self.editParameters))
-    menu.add(JSeparator())
-    menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
-    menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
+    #menu.add(JSeparator())
+    #menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
+    #menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
     if launchAbeille!=None:
       menu.add(JSeparator())
       menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),self.openFormEditor))
