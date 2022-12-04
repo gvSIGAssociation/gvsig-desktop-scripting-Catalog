@@ -29,6 +29,7 @@ from javax.swing.tree import TreePath
 from javax.swing import JOptionPane 
 from java.util.function import Predicate
 
+from org.apache.commons.io import IOUtils
 import os
 
 from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNING, YES, YES_NO
@@ -425,6 +426,58 @@ def openSearchDialog(params):
           i18n.getTranslation("_Search")+ ": " + store.getName(), 
           WindowManager.MODE.WINDOW
   )
+
+def getResourceOfTable(params, resourceName):
+  i18n = ToolsLocator.getI18nManager()
+  try:
+    params.validate()
+  except ValidateDataParametersException, ex:
+    msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+    return None
+  res = None
+  resources = None
+  store = None
+  try:
+    store = getDataManager().openStore(params.getDataStoreName(), params)
+    resources = store.getResourcesStorage()
+    if resources == None:
+      return None
+    res = resources.getResource(resourceName)
+    if res ==None or not res.exists():
+      return None
+    return IOUtils.toByteArray(res.asInputStream())
+  finally:
+    IOUtils.closeQuietly(res)
+    DisposeUtils.disposeQuietly(resources)
+    DisposeUtils.disposeQuietly(store)
+
+def putResourceOfTable(params, resourceName, bytes):
+  i18n = ToolsLocator.getI18nManager()
+  try:
+    params.validate()
+  except ValidateDataParametersException, ex:
+    msgbox(i18n.getTranslation("_It_is_not_possible_to_open_the_recurse_Try_to_edit_the_parameters_first_and_fill_in_the_required_values")+"\n\n"+ex.getLocalizedMessageStack())
+    return False
+  res = None
+  resources = None
+  store = None
+  try:
+    store = getDataManager().openStore(params.getDataStoreName(), params)
+    resources = store.getResourcesStorage()
+    if resources == None:
+      return False
+    res = resources.getResource(resourceName)
+    if res ==None :
+      return False
+    if isinstance(bytes,basestring):
+      IOUtils.write(bytes, res.asOutputStream(),"UTF-8")
+    else:
+      IOUtils.write(bytes, res.asOutputStream())
+  finally:
+    IOUtils.closeQuietly(res)
+    DisposeUtils.disposeQuietly(resources)
+    DisposeUtils.disposeQuietly(store)
+
 
 def addToBookmarks(root, params, name):
   i18n = ToolsLocator.getI18nManager()

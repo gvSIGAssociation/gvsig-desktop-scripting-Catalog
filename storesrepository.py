@@ -21,10 +21,13 @@ from org.gvsig.tools.swing.api import ToolsSwingLocator
 from org.gvsig.tools import ToolsLocator
 from org.gvsig.tools.swing.api.windowmanager import WindowManager, WindowManager_v2
 
+from org.gvsig.expressionevaluator import ExpressionUtils
+from org.gvsig.expressionevaluator.swing import ExpressionEvaluatorSwingLocator
+
 from addons.Catalog import catalogutils
 from addons.Catalog.catalogutils import CatalogNode, CatalogSimpleNode, createJMenuItem, getDataManager, getIconFromParams
 
-from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks
+from addons.Catalog.catalogutils import openAsTable, openAsLayer, openAsForm, openSearchDialog, openAsParameters, addToBookmarks, getResourceOfTable, putResourceOfTable
 
 from org.gvsig.fmap.dal.exception import ValidateDataParametersException
 
@@ -99,10 +102,10 @@ class StoresRepository(CatalogNode):
       x.showWindow("Crear repositorio")
     
 class SubstoresRepository(CatalogNode):
-  def __init__(self, parent, label, subrepo):
+  def __init__(self, parent, label, repo):
     CatalogNode.__init__(self, parent, icon=getResource(__file__,"images","StoresRepository.png"))
     self.__label = label
-    self.subrepo = subrepo
+    self.__repo = repo
 
   def _getChildren(self):
     #print "### SubstoresRepository._getChildren"
@@ -116,7 +119,7 @@ class SubstoresRepository(CatalogNode):
     for i in xrange(1,5):
       try :
         config = catalogutils.getConfig()
-        sectionName = "StoreRepository_" + self.subrepo.getID()
+        sectionName = "StoreRepository_" + self.__repo.getID()
         hidde_pattern = None
         if config.has_section(sectionName):
           if config.has_option(sectionName, "hidde_pattern"):
@@ -124,7 +127,7 @@ class SubstoresRepository(CatalogNode):
             if hidde_pattern.strip() == "":
               hidde_pattern = None
               
-        names0 = self.subrepo.keySet()
+        names0 = self.__repo.keySet()
         if names0 != None:
           names = list()
           names.extend(names0)
@@ -132,8 +135,8 @@ class SubstoresRepository(CatalogNode):
           for name in names:
             if hidde_pattern!=None and fnmatch(name, hidde_pattern):
               continue
-            params = self.subrepo.get(name)
-            x = Table(self, name, params)
+            params = self.__repo.get(name)
+            x = Table(self, name, params, self.__repo)
             self._children.append(x)
         break
       except Throwable as e:
@@ -144,7 +147,7 @@ class SubstoresRepository(CatalogNode):
   def createPopup(self):
     i18n = ToolsLocator.getI18nManager()
     dataManager = getDataManager()
-    repoID = self.subrepo.getID()
+    repoID = self.__repo.getID()
     isdbrepo = dataManager.getDatabaseWorkspace(repoID)!=None
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Update"),self.update))
@@ -161,14 +164,14 @@ class SubstoresRepository(CatalogNode):
 
   def disconnectWorkspace(self, *args):
     dataManager = getDataManager()
-    repoID = self.subrepo.getID()
+    repoID = self.__repo.getID()
     workspace = dataManager.getDatabaseWorkspace(repoID)
     if workspace!=None:
       workspace.disconnect()
 
   def __showTable(self, tablename):
     dataManager = getDataManager()
-    workspace = dataManager.getDatabaseWorkspace(self.subrepo.getID())
+    workspace = dataManager.getDatabaseWorkspace(self.__repo.getID())
     serverExplorer = workspace.getServerExplorer()
     params = serverExplorer.get(tablename)
     #openAsTable(params)
@@ -177,12 +180,12 @@ class SubstoresRepository(CatalogNode):
     
   def addTablesToRepository(self, *args):
     dataManager = getDataManager()
-    workspace = dataManager.getDatabaseWorkspace(self.subrepo.getID())
+    workspace = dataManager.getDatabaseWorkspace(self.__repo.getID())
     winManager = ToolsSwingLocator.getWindowManager()
     panel = RepositoryAddTablePanel()
     dialog = winManager.createDialog(
                 panel,
-                u"Añadir tablas al repositorio (%s)" %  self.subrepo.getID(),
+                u"Añadir tablas al repositorio (%s)" %  self.__repo.getID(),
                 None,
                 winManager.BUTTONS_OK_CANCEL
     )
@@ -202,7 +205,7 @@ class SubstoresRepository(CatalogNode):
   def getPatternToHiddeEntries(self, *args):
     i18n = ToolsLocator.getI18nManager()
     config = catalogutils.getConfig()
-    sectionName = "StoreRepository_" + self.subrepo.getID()
+    sectionName = "StoreRepository_" + self.__repo.getID()
     hidde_pattern = ""
     if config.has_section(sectionName):
       if config.has_option(sectionName, "hidde_pattern"):
@@ -227,11 +230,12 @@ class SubstoresRepository(CatalogNode):
     return  self.__label
 
 class Table(CatalogSimpleNode):
-  def __init__(self, parent, label, params):
+  def __init__(self, parent, label, params, repo):
     CatalogSimpleNode.__init__(self, parent, icon=getIconFromParams(params))
     self.__label = label
     self.__params = params
-  
+    self.__repo = repo
+    
   def getParams(self):
     return self.__params
             
@@ -240,6 +244,9 @@ class Table(CatalogSimpleNode):
     
   def createPopup(self):
     i18n = ToolsLocator.getI18nManager()
+    dataManager = getDataManager()
+    repoID = self.__repo.getID()
+    isdbrepo = dataManager.getDatabaseWorkspace(repoID)!=None
     menu = JPopupMenu()
     menu.add(createJMenuItem(i18n.getTranslation("_Add_to_view"),self.addToView, "view-layer-add"))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_as_table"),self.actionPerformed, "layer-show-attributes-table"))
@@ -250,12 +257,10 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Copy_URL"),self.copyURL))
     menu.add(JSeparator())
     menu.add(createJMenuItem(i18n.getTranslation("_View_parameters"),self.editParameters))
-    #menu.add(JSeparator())
-    #menu.add(createJMenuItem(i18n.getTranslation("_Add_resource"),self.addResource))
-    #menu.add(createJMenuItem(i18n.getTranslation("_Get_resource"),self.getResource))
-    if launchAbeille!=None:
-      menu.add(JSeparator())
-      menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),self.openFormEditor))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_editing_actions"),lambda e: self.__openScript("editsc",u"Editing actions: %s" %  self.getParams().getTable()), enabled=isdbrepo))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_form_actions"),lambda e: self.__openScript("jfrms",u"Form actions: %s" %  self.getParams().getTable()), enabled=isdbrepo))
+    menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),lambda e: self.__openFormEditor(), enabled=False))
     actions = getCatalogManager().getActions("STORES_REPOSITORY_TABLE", self.__params)
     if len(actions)>0 :
       menu.add(JSeparator())
@@ -263,7 +268,29 @@ class Table(CatalogSimpleNode):
         menu.add(JMenuItem(action))
     return menu    
 
+  def __openScript(self, resourceName, title):
+    resource = getResourceOfTable(self.getParams(), resourceName)
+    if resource == None:
+      script = ExpressionUtils.createScript(None, "%s_%s" % (self.getParams().getTable(),resourceName))
+    else:
+      script = ExpressionUtils.createScript(resource, "%s_%s" % (self.getParams().getTable(),resourceName))
+    editor = ExpressionEvaluatorSwingLocator.getManager().createJScriptEditor(script)
+    winManager = ToolsSwingLocator.getWindowManager()
+    dialog = winManager.createDialog(
+                editor,
+                title,
+                None,
+                winManager.BUTTONS_APPLY_OK_CANCEL
+    )
+    editor.setScript(script)
+    dialog.addActionListener(lambda e: self.__doUpdateScript(dialog, editor, resourceName))
+    dialog.show(winManager.MODE.WINDOW)
 
+  def __doUpdateScript(self, dialog, editor, resourceName):
+    if  dialog.getAction()== WindowManager_v2.BUTTON_CANCEL:
+      return
+    putResourceOfTable(self.getParams(), resourceName, editor.getScript().getCode())
+    
   def openFormEditor(self, *args):
     if launchAbeille==None:
       return
