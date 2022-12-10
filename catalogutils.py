@@ -355,7 +355,7 @@ def openAsTable(params, name=None):
         tableDoc.setName(store.getName())
       else:
          tableDoc.setName(name)
-    project.addDocument(tableDoc)
+      project.addDocument(tableDoc)
       
     ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
     
@@ -496,6 +496,7 @@ class FilterDocumentByStore(Predicate):
   def test(self, doc):
     if doc.getTypeName()!=TableManager.TYPENAME:
       return False
+    #print "self=%s, doc=%s" % (doc.getFeatureStore().getFullName(), self.storeFullName)
     return doc.getFeatureStore().getFullName() == self.storeFullName
 
 def main(*args):
