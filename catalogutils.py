@@ -38,7 +38,7 @@ from org.gvsig.fmap.dal.exception import ValidateDataParametersException
 from org.gvsig.app import ApplicationLocator
 from org.gvsig.app.project.documents.table import TableManager
 from org.gvsig.tools import ToolsLocator
-from org.gvsig.tools.swing.api import ToolsSwingLocator
+from org.gvsig.tools.swing.api import ToolsSwingLocator, ToolsSwingUtils
 from org.gvsig.fmap.dal import DALLocator
 from org.gvsig.fmap.mapcontext import MapContextLocator
 from org.gvsig.andami import PluginsLocator
@@ -49,7 +49,7 @@ from org.gvsig.fmap.dal import DataStoreProviderFactory
 from org.gvsig.tools.dispose import DisposeUtils
 from gvsig import logger
 from gvsig import LOGGER_WARN
-
+from java.awt import GridBagConstraints
 
 from org.gvsig.scripting import ScriptingLocator
 
@@ -356,8 +356,13 @@ def openAsTable(params, name=None):
       else:
          tableDoc.setName(name)
       project.addDocument(tableDoc)
-      
-    ApplicationLocator.getManager().getUIManager().addWindow(tableDoc.getMainWindow())
+    panel = tableDoc.getMainWindow()
+    ToolsSwingUtils.ensureHeightWitdh(
+            panel.asJComponent(), 
+            ToolsSwingUtils.RELATIVE_TO_DESKTOPPANE,
+            0.75, 0.75, 0.75, 0.75
+    )
+    ApplicationLocator.getManager().getUIManager().addWindow(panel)
     
 def openAsForm(params):
   i18n = ToolsLocator.getI18nManager()
@@ -421,10 +426,16 @@ def openSearchDialog(params):
   winmgr = ToolsSwingLocator.getWindowManager()
   store = getDataManager().openStore(params.getDataStoreName(), params)
   panel = swingManager.createFeatureStoreSearchPanel(store)
+  ToolsSwingUtils.ensureHeightWitdh(
+          panel.asJComponent(), 
+          ToolsSwingUtils.RELATIVE_TO_DESKTOPPANE,
+          0.75, 0.75, 0.85, 0.85
+  )
   winmgr.showWindow(
           panel.asJComponent(), 
           i18n.getTranslation("_Search")+ ": " + store.getName(), 
-          WindowManager.MODE.WINDOW
+          WindowManager.MODE.WINDOW,
+          {"align": GridBagConstraints.CENTER}
   )
 
 def getResourceOfTable(params, resourceName):
