@@ -15,7 +15,6 @@ from javax.swing import JScrollPane
 from javax.swing.tree import DefaultTreeCellRenderer
 from javax.swing.tree import DefaultTreeModel
 from javax.swing.tree import TreePath
-from javax.swing import JPopupMenu
 from org.gvsig.fmap.dal import DALLocator
 from org.gvsig.tools import ToolsLocator
 
@@ -23,7 +22,6 @@ import addons.Catalog.catalogutils
 
 from addons.Catalog.catalogutils import CatalogRoot
 from addons.Catalog.cataloglocator import getCatalogManager
-from addons.Catalog.catalogutils import createJMenuItem
 
 class Catalog(CatalogRoot):
   def __init__(self, tree):
@@ -45,12 +43,6 @@ class Catalog(CatalogRoot):
     
   def getDatabases(self):
     return self.getChildAt(2)
-
-  def createPopup(self):
-    i18n = ToolsLocator.getI18nManager()
-    menu = JPopupMenu()
-    menu.add(createJMenuItem(i18n.getTranslation("_Update"),lambda e:self.getTree().getModel().reload()))
-    return menu    
    
 class CatalogCellRenderer(DefaultTreeCellRenderer):
   def __init__(self, icon_folder, icon_doc):
@@ -59,11 +51,7 @@ class CatalogCellRenderer(DefaultTreeCellRenderer):
 
   def getTreeCellRendererComponent(self, tree, value, selected, expanded, isLeaf, row, focused):
     c = DefaultTreeCellRenderer.getTreeCellRendererComponent(self, tree, value, selected, expanded, isLeaf, row, focused)
-    getIcon = getattr(value,"getIcon")
-    if getIcon == None:
-      icon = self._icon_folder
-    else:
-      icon = getIcon()
+    icon = value.getIcon()
     if icon == None:
       if value.isLeaf():
         icon = self._icon_doc

@@ -5,6 +5,7 @@ import gvsig
 from gvsig.uselib import use_plugin
 use_plugin("org.gvsig.geodb.app.mainplugin")
 
+import os
 from fnmatch import fnmatch
 
 from gvsig import getResource
@@ -48,6 +49,8 @@ try:
   from addons.ScriptingComposerTools.abeille.abeille import launchAbeille
 except:
   launchAbeille = None
+
+DEFAULT_REPOSITORY_GROUP_NAME="Tables"
 
 class StoresRepositoryObserver(Observer):
   def __init__(self, node):
@@ -104,6 +107,7 @@ class StoresRepository(CatalogNode):
 class SubstoresRepository(CatalogNode):
   def __init__(self, parent, label, repo):
     CatalogNode.__init__(self, parent, icon=getResource(__file__,"images","StoresRepository.png"))
+    #print "### SubstoresRepository.__init__", repr(label)
     self.__label = label
     self.__repo = repo
 
@@ -118,26 +122,32 @@ class SubstoresRepository(CatalogNode):
     self._children = list()
     for i in xrange(1,5):
       try :
-        config = catalogutils.getConfig()
-        sectionName = "StoreRepository_" + self.__repo.getID()
-        hidde_pattern = None
-        if config.has_section(sectionName):
-          if config.has_option(sectionName, "hidde_pattern"):
-            hidde_pattern = config.get(sectionName, "hidde_pattern")
-            if hidde_pattern.strip() == "":
-              hidde_pattern = None
-              
-        names0 = self.__repo.keySet()
-        if names0 != None:
-          names = list()
-          names.extend(names0)
-          names.sort()
-          for name in names:
-            if hidde_pattern!=None and fnmatch(name, hidde_pattern):
-              continue
-            params = self.__repo.get(name)
-            x = Table(self, name, params, self.__repo)
-            self._children.append(x)
+        #config = catalogutils.getConfig()
+        #sectionName = "StoreRepository_" + self.__repo.getID()
+        #hidde_pattern = None
+        #if config.has_section(sectionName):
+        #  if config.has_option(sectionName, "hidde_pattern"):
+        #    hidde_pattern = config.get(sectionName, "hidde_pattern")
+        #    if hidde_pattern.strip() == "":
+        #      hidde_pattern = None
+
+        #print "### SubstoresRepository: hidde_pattern:%s " % (hidde_pattern)
+        groups = set()
+        names = self.__repo.keySet()
+        for name in names:
+          group = self.__repo.getProperty(name+".catalog.group")
+          #print "### SubstoresRepository: name:%s  group:%s" % (name,group)
+          if group in (None,""):
+            groups.add(DEFAULT_REPOSITORY_GROUP_NAME)
+            continue
+          groups.add(group)
+        names = list()
+        names.extend(groups)
+        names.sort()
+        #print "### SubstoresRepository: groups:%s" % (names)
+        for name in names:
+          x = Group(self, name, self.__repo)
+          self._children.append(x)
         break
       except Throwable as e:
         e.printStackTrace()
@@ -227,7 +237,81 @@ class SubstoresRepository(CatalogNode):
     SwingUtilities.invokeLater(self.__load)
     
   def toString(self):
+    #print "### SubstoresRepository.toString ", repr(self.__label)
     return  self.__label
+
+def getGroupIcon(label):
+  if label in ("",None):
+    label = DEFAULT_REPOSITORY_GROUP_NAME.lower()
+  label = label.lower()
+  r = getResource(__file__,"images",label +".png")
+  if not os.path.isfile(r):
+    r = getResource(__file__,"images","tables.png")
+  return r
+  
+class Group(CatalogNode):
+  def __init__(self, parent, label, repo):
+    CatalogNode.__init__(self, parent, icon=getGroupIcon(label))
+    self.__label = label
+    self.__repo = repo
+    #print "### Group.__init__", repr(self.__label)
+
+  def _getChildren(self):
+    #print "### Group._getChildren"
+    if self._children == None:
+      self.__load()
+    return self._children
+    
+  def __load(self):
+    #print "### Group.__load", repr(self.__label)
+    self._children = list()
+    for i in xrange(1,5):
+      try :
+        config = catalogutils.getConfig()
+        sectionName = "StoreRepository_" + self.__repo.getID()
+        hidde_pattern = None
+        if config.has_section(sectionName):
+          if config.has_option(sectionName, "hidde_pattern"):
+            hidde_pattern = config.get(sectionName, "hidde_pattern")
+            if hidde_pattern.strip() == "":
+              hidde_pattern = None
+     
+        #print "### Group.__load, hidde_pattern =",repr(hidde_pattern)
+        names0 = self.__repo.keySet()
+        if names0 != None:
+          names = list()
+          names.extend(names0)
+          names.sort()
+          for name in names:
+            #print "### Group.__load, name =",repr(name)
+            if hidde_pattern!=None and fnmatch(name, hidde_pattern):
+              #print "### Group.__load, pattern skip name =",repr(name)
+              continue
+            group = self.__repo.getProperty(name+".catalog.group")
+            if group in (None,""):
+              group = DEFAULT_REPOSITORY_GROUP_NAME
+            if group != self.__label:
+              #print "### Group.__load, group skip name =",repr(name)
+              continue;
+            label = self.__repo.getProperty(name+".label")
+            if label in ("",None):
+              label = name
+            params = self.__repo.get(name)
+            x = Table(self, label, params, self.__repo)
+            self._children.append(x)
+        break
+      except Throwable as e:
+        e.printStackTrace()
+        pass
+    SwingUtilities.invokeLater(self.reload)
+
+  def update(self, event=None):
+    SwingUtilities.invokeLater(self.__load)
+
+  def toString(self):
+    #print "### Group.toString", repr(self.__label)
+    return  self.__label
+
 
 class Table(CatalogSimpleNode):
   def __init__(self, parent, label, params, repo):
