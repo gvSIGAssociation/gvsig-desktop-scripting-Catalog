@@ -411,13 +411,13 @@ class Table(CatalogSimpleNode):
     addToBookmarks(self.getRoot(), self.getParams(), self.getParams().getTable())
 
   def actionPerformed(self, event):
-    openAsTable(self.getParams())
+    openAsTable(self.getParams(), self.__label)
   
   def editParameters(self, event):
     openAsParameters(self.getParams())
   
   def addToView(self, event):
-    openAsLayer(self.getParams())
+    openAsLayer(self.getParams(), self.__label)
     
 def main(*args):
   pass
