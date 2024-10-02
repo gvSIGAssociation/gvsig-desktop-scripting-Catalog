@@ -8,6 +8,9 @@ use_plugin("org.gvsig.geodb.app.mainplugin")
 import os
 from fnmatch import fnmatch
 
+from java.io import File
+from org.apache.commons.io import FileUtils
+
 from gvsig import getResource
 from gvsig.commonsdialog import inputbox, msgbox, confirmDialog, QUESTION, WARNING, YES, YES_NO
 
@@ -297,7 +300,7 @@ class Group(CatalogNode):
             if label in ("",None):
               label = name
             params = self.__repo.get(name)
-            x = Table(self, label, params, self.__repo)
+            x = Table(self, label, params, self.__repo, name)
             self._children.append(x)
         break
       except Throwable as e:
@@ -314,11 +317,12 @@ class Group(CatalogNode):
 
 
 class Table(CatalogSimpleNode):
-  def __init__(self, parent, label, params, repo):
+  def __init__(self, parent, label, params, repo, tablename):
     CatalogSimpleNode.__init__(self, parent, icon=getIconFromParams(params))
     self.__label = label
     self.__params = params
     self.__repo = repo
+    self.__tablename = tablename
     
   def getParams(self):
     return self.__params
@@ -345,12 +349,30 @@ class Table(CatalogSimpleNode):
     menu.add(createJMenuItem(i18n.getTranslation("_Open_editing_actions"),lambda e: self.__openScript("editsc",u"Editing actions: %s" %  self.getParams().getTable()), enabled=isdbrepo))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_form_actions"),lambda e: self.__openScript("jfrms",u"Form actions: %s" %  self.getParams().getTable()), enabled=isdbrepo))
     menu.add(createJMenuItem(i18n.getTranslation("_Open_form_editor"),lambda e: self.__openFormEditor(), enabled=False))
+    menu.add(JSeparator())
+    menu.add(createJMenuItem(i18n.getTranslation("_Use_local_resources"),lambda e: self.useLocalResources()))
+    menu.add(createJMenuItem(i18n.getTranslation("_Remove_local_resources"),lambda e: self.removeLocalResources()))
     actions = getCatalogManager().getActions("STORES_REPOSITORY_TABLE", self.__params)
     if len(actions)>0 :
       menu.add(JSeparator())
       for action in actions:
         menu.add(JMenuItem(action))
     return menu    
+
+  def useLocalResources(self):
+    dataManager = getDataManager()
+    workspace = dataManager.getDatabaseWorkspace(self.__repo.getID())
+    folder = FileUtils.getFile(dataManager.getLocalResourcesFolder(workspace.getServerExplorerParameters()), "resources", self.__tablename)
+    folder.mkdirs()
+
+  def removeLocalResources(self):
+    dataManager = getDataManager()
+    workspace = dataManager.getDatabaseWorkspace(self.__repo.getID())
+    folder = FileUtils.getFile(dataManager.getLocalResourcesFolder(workspace.getServerExplorerParameters()), "resources", self.__tablename)
+    i18n = ToolsLocator.getI18nManager()
+    prompt = i18n.getTranslation("_Are_you_sure_to_remove_the_local_resources_of_XTableX", (self.__tablename,))
+    if confirmDialog(prompt, i18n.getTranslation("_Catalog"),YES_NO,QUESTION)==YES:
+      FileUtils.deleteDirectory(folder)
 
   def __openScript(self, resourceName, title):
     resource = getResourceOfTable(self.getParams(), resourceName)
