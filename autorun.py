@@ -22,7 +22,7 @@ def main(*args):
   catalogManager.addCatalogNode(StoresRepository)
 
   catalogManager.installCatalog()
-  catalogManager.putCatalogInViews()
   
   actions.selfRegister()
+  catalogManager.putCatalogInViews()
 
