@@ -36,13 +36,21 @@ class Catalog(CatalogRoot):
         gvsig.logger("Can't add node '"+repr(node)+"'. " + str(ex), gvsig.LOGGER_WARN, ex)
            
   def getBookmarks(self):
-    return self.getChildAt(0)
+    return self.getNodeByName("Bookmarks")
     
   def getFolders(self):
-    return self.getChildAt(1)
+    return self.getNodeByName( "Folders")
     
   def getDatabases(self):
-    return self.getChildAt(2)
+    return self.getNodeByName("Databases")
+
+  def getNodeByName(self, name):
+    for n in range(self.getChildCount()):
+      node = self.getChildAt(n)
+      a = node.__class__.__name__.split(".")[-1]
+      #print a
+      if a == name:
+        return node
    
 class CatalogCellRenderer(DefaultTreeCellRenderer):
   def __init__(self, icon_folder, icon_doc):
@@ -101,6 +109,15 @@ class JCatalogTree(JTree):
     
 def main(*args):
   catalogManager = getCatalogManager()
-  catalogManager.addCatalogToView(currentView())
-  #catalog  = Catalog(JTree())
+  #catalogManager.addCatalogToView(currentView())
+  catalog  = Catalog(JTree())
+  print catalog
+  print dir(catalog)
+  for n in range(catalog.getChildCount()):
+    node = catalog.getChildAt(n)
+    a = node.__class__.__name__.split(".")[-1]
+    print a
+    if a == "Bookmarks":
+      print "EUREKA"
+    
  
